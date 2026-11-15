@@ -28,10 +28,10 @@ Tests: npm test (rules, 200 seeds) Â· node test/balance.mjs (bots, pass lines) Â
 - Art: merged vertex-colour box models (16 draw calls), teh-tarik water, sticker labels (system emoji), rain = one LineSegments.
 - Titles: awal = over half the score banked before Amaran; dokumen = Dokumen plus every Ubat/Wang present in that house; then comot, peti, tabah.
 - Card tip is "Kalau diarah berpindah, pindah segera. Jangan tunggu air naik." (sourced). The design's waterproof-container example could not be sourced, so it is not used. NEEDS OWNER OK.
-- Kongsi: Web Share with the PNG if allowed, else link only, else Salin pautan + Simpan gambar (<a download>) + long-press on the card image.
+- Kongsi: Web Share with the PNG if allowed, else link only, else Salin pautan + Simpan gambar (<a download>) + long-press on the card image. If share.js cannot load, the end screen shows the plain score and Main Semula.
 
 ## Measurements
-- Load (Slow 4G, cold, median of 5): 2207ms live after Stage 4, 2515ms with 4x CPU, 156KB over 5 requests. Pass. Three.js self hosted and tree-shaken (the CDN min build pulls the unminified core).
+- Load (Slow 4G, cold, median of 5), final live build: 2236ms, 2541ms with 4x CPU, 157KB over 5 requests. Pass. Three.js self hosted and tree-shaken (the CDN min build pulls the unminified core).
 - Slow-phone guard: 65% resolution if frames 20 to 140 average under 40 fps (tested by forcing 25 fps). Not handled: WebGL context loss.
 - Balance, 100 seeds: zero taps 0 (clock never starts); minimal effort (one tap on Dokumen) 10 in 100%; casual bot 49% of nilai; best bot (24 plans, 0.25s reaction) 82%, saves every item 0%, every non-decoy 0 to 1%; clears every non-decoy at 2.5x speed.
 - "Idle bot saves some" is read as the minimal-effort bot; no free-points mechanic was added. NEEDS OWNER OK.
