@@ -5,16 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Air Naik!</title>
 <meta name="description" content="Hujan tak berhenti. Selamatkan apa yang boleh.">
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<!-- three.module.min.js imports the unminified ./three.core.js (211KB br). The second line maps it to the min build (85KB br). -->
-<script type="importmap">
-{"imports":{
-"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.min.js",
-"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.core.js":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.core.min.js"
-}}
-</script>
-<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.min.js">
-<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.core.min.js">
+<!-- Three.js 0.187.0, self hosted: only the classes render.js uses (npm run vendor). 136KB gzip, one request, no second host. -->
+<script type="importmap">{"imports":{"three":"./vendor/three.min.js"}}</script>
+<link rel="modulepreload" href="./vendor/three.min.js">
 <link rel="modulepreload" href="./data.js">
 <link rel="modulepreload" href="./sim.js">
 <link rel="modulepreload" href="./render.js">
@@ -98,7 +91,8 @@ import { createSim, step, tap, score } from './sim.js';
 const $ = id => document.getElementById(id), q = new URLSearchParams(location.search), debug = q.has('debug');
 const COLORS = ['#57cc99', '#f4d35e', '#f08a24', '#e5383b'];
 const LAZY3D = false; // true: Three.js loads on Mula instead of on the landing (fallback if the 3s gate fails)
-let sim, view, playing = false, last = 0, msgN = 0, toastT = 0, hint = '';
+let sim, view, playing = false, last = 0, msgN = 0, toastT = 0, hint = '', frames = 0, slow = 0, low = false;
+function fail(e) { console.error(e); $('land').querySelector('p').textContent = BM.fail; } // WebGL missing or the script did not load
 
 const newSim = () => { sim = createSim(q.has('seed') ? +q.get('seed') : Math.random() * 2 ** 31 | 0, q.has('calm')); view.setSim(sim); msgN = 0; }; // ?calm = no chaos, for tests
 const set = (el, k, val) => { if (el['_' + k] !== val) el[k] = el['_' + k] = val; }; // write the DOM only on change
@@ -117,7 +111,7 @@ function start(skip) {
   $('land').hidden = $('end').hidden = true; $('hud').hidden = false;
   view.begin(skip); playing = true; ft.length = 0;
 }
-$('mula').onclick = async () => { if (!view) { $('mula').disabled = true; await boot(); } start(false); };
+$('mula').onclick = async () => { try { if (!view) { $('mula').disabled = true; await boot(); } start(false); } catch (e) { fail(e); } };
 $('lagi').onclick = () => { newSim(); start(true); };
 $('c').addEventListener('pointerdown', e => {
   if (!playing) return;
@@ -165,17 +159,22 @@ function loop(now) {
     }
   }
   view.frame(dt, playing ? hint : '');
+  // Slow phone guard: if frames 20 to 140 average under 40 fps, draw at 65% resolution from then on.
+  if (!low && dt > 0 && document.visibilityState === 'visible' && ++frames > 20) {
+    slow += dt;
+    if (frames === 140) { low = true; window.__low = slow / 120 > 1 / 40; if (window.__low) view.quality(0.65); }
+  }
   if (debug && dt && (playing || !sim.started)) { // FPS over the whole run, frozen on the end screen; p5 = 95th percentile frame time
     ft.push(dt); if (ft.length > 9000) ft.shift();
     if (ft.length % 20 === 0) {
       const s = [...ft].sort((a, b) => a - b), avg = ft.length / ft.reduce((a, b) => a + b, 0), p5 = 1 / s[Math.floor(s.length * 0.95)];
       window.__fps = { avg: Math.round(avg), p5: Math.round(p5) };
-      $('dbg').hidden = false; $('dbg').textContent = `fps ${Math.round(avg)} p5 ${Math.round(p5)}\nready ${window.__ready}ms\nt ${sim.t.toFixed(1)} seed ${sim.seed}`;
+      $('dbg').hidden = false; $('dbg').textContent = `fps ${Math.round(avg)} p5 ${Math.round(p5)}\nready ${window.__ready}ms${window.__low ? ' low-res' : ''}\nt ${sim.t.toFixed(1)} seed ${sim.seed}`;
     }
   }
 }
 
-if (LAZY3D) $('mula').disabled = false; else boot();
+if (LAZY3D) $('mula').disabled = false; else boot().catch(fail);
 </script>
 </body>
 </html>

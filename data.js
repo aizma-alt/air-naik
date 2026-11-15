@@ -80,7 +80,7 @@ export const BM = {
   hint1: 'Klik barang', hint2: 'Klik tempat tinggi',
   heavy: 'Terlalu berat!', full: 'Tangan penuh!', deep: 'Air dah tinggi sangat!',
   lift: 'Air naik, terapung ke atas!', boat: 'Bot sampai!', move: 'Masa pindah!',
-  jacket: 'Pakai jaket', pps: 'Menuju PPS',
+  jacket: 'Pakai jaket', pps: 'Menuju PPS', fail: 'Tak dapat muat permainan. Cuba muat semula.',
   cat: 'Comot lari!', catUp: 'Comot panjat bumbung!',
   pingTitle: 'Mesej baru', ok: 'OK', sebarBtn: 'Sebarkan', semakBtn: 'Semak sumber rasmi',
   sebar: 'Sibuk forward mesej...', semak: 'Bijak. Semak dulu.',

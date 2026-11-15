@@ -54,9 +54,10 @@ function batch() {
 }
 
 export function createView(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); // the CSS storm gradient shows through
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); // opaque: the ground fills the view, so no page compositing
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); // phone dpr is 3.25
   const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1d3344);
   scene.add(new THREE.HemisphereLight(0xcfe0ee, 0x6b5d4a, 1.5));
   const sun = new THREE.DirectionalLight(0xfff1dd, 1.6); sun.position.set(5, 9, 7); scene.add(sun); // three flat tones per box
   const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 120);
@@ -173,6 +174,7 @@ export function createView(canvas) {
     cam.left = -halfW; cam.right = halfW; cam.top = halfH; cam.bottom = -halfH; cam.updateProjectionMatrix();
   }
   addEventListener('resize', resize); resize();
+  const quality = k => { renderer.setPixelRatio(Math.min(devicePixelRatio, 2) * k); resize(); }; // slow phone: draw fewer pixels
 
   const target = new THREE.Vector3(4.5, 3.7, 1.5), v = new THREE.Vector3();
   function frame(dt, hint) {
@@ -263,5 +265,5 @@ export function createView(canvas) {
     const r = canvas.getBoundingClientRect(); v.set(x, y, z).project(cam);
     return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
   }
-  return { setSim, begin, frame, pick, resize, toScreen, boatAt: () => toScreen(boat.position.x, boat.position.y, boat.position.z), info: () => renderer.info.render };
+  return { setSim, begin, frame, pick, resize, quality, toScreen, boatAt: () => toScreen(boat.position.x, boat.position.y, boat.position.z), info: () => renderer.info.render };
 }

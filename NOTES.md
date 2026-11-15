@@ -5,11 +5,11 @@ Docs: docs/driver.md (run loop), docs/design.md (intent, rules, flows), docs/ite
 Test device: Redmi Note 15 Pro 5G. Real FPS: open ?debug on the phone (fps avg, p5 over the run, ready ms). ?seed=N repeats a run, ?calm turns chaos off.
 
 ## Files
-index.html shell + HUD + loop · data.js all content and tuning · sim.js rules, no Three.js (createSim, tap, step, score) · render.js Three.js view + picking · probe.html Stage 0 probe
+index.html shell + HUD + loop · data.js all content and tuning · sim.js rules, no Three.js (createSim, tap, step, score) · render.js Three.js view + picking · vendor/three.min.js built by npm run vendor (rerun when render.js uses a new THREE class) · probe.html Stage 0 probe
 Tests: npm test (rules, 200 seeds) · node test/balance.mjs (bots, pass lines) · node test/browser.mjs (page smoke, shots in test/shots; --perf [url] for Slow 4G load) · test/bots.mjs (bots, run in Node and in the page)
 
 ## Stages
-0 probe DONE · 1 greybox DONE · 2 chaos + balance DONE · 3 art DONE · NEXT: 4 perf gate · 5 share card + OG · 6 testers + launch
+0 probe DONE · 1 greybox DONE · 2 chaos + balance DONE · 3 art DONE · 4 perf DONE (phone FPS open) · NEXT: 5 share card + OG · 6 testers + launch
 
 ## Rules
 - UI alert words: Normal, Waspada, Amaran, Bahaya. Never name any agency or charity in the game. Official level names beyond these are unverified.
@@ -29,11 +29,12 @@ Tests: npm test (rules, 200 seeds) · node test/balance.mjs (bots, pass lines) �
 - Art (Stage 3): box models merged into vertex-colour meshes (16 draw calls), teh-tarik water, sticker labels (white disc + system emoji), rain = one LineSegments, lit windows, palm, CSS vignette. Banked items ride in the boat at boarding. 3 review rounds, shots in test/review (headless, gitignored).
 
 ## Measurements
-- Three.js: three.module.min.js imports the UNMINIFIED three.core.js; the importmap in index.html remaps it to the min build. Keep it. Page total was 170KB at Stage 1.
-- 1b load (Slow 4G, cold, median of 5): 2318ms live, 2659ms with 4x CPU. Pass but MARGINAL. LAZY3D flag in index.html = load on Mula.
+- Three.js 0.187.0 is self hosted and tree-shaken (136KB gzip, one host). The CDN build pulled the unminified core; with a remap it was 176KB and 2277ms.
+- Stage 4 load (Slow 4G, cold, median of 5, local gzip server): 2162ms, 2477ms with 4x CPU, 155KB over 5 requests. Pass, still within 1s of the line. LAZY3D flag in index.html = load on Mula, not needed.
+- Audit: 16 draw calls, opaque canvas, pixel ratio capped at 2, drops to 65% resolution if frames 20 to 140 average under 40 fps (tested by forcing 25 fps), load failure shows a BM message. Not handled: WebGL context loss.
 - Balance, 100 seeds: zero taps = 0 (clock never starts); minimal effort (one tap on the hinted Dokumen) scores 10 in 100%; casual bot 49% of nilai; best bot (best of 24 plans, 0.25s reaction) 82%, saves every item in 0%, every non-decoy in 1%. Bot strength check: clears every non-decoy at 2.5x speed in 100%.
 - "Idle bot saves some" is read as the minimal-effort bot. No free-points mechanic was added. NEEDS OWNER OK.
 - Phone FPS: NOT MEASURED (adb lists no device). Owner playtested Stage 1 by hand: "seems fine", no numbers.
 
-## Stage 4 needs
-Re-measure load after art (local: 2277ms Slow 4G, 2594ms with 4x CPU, 176KB). Try a self-hosted esbuild bundle and keep it only if it measures faster as served. Code and perf audit. Phone FPS if adb is up.
+## Stage 5 needs
+share.js: result card (1080x1350 canvas), titles (s.early holds score banked before Amaran), Kongsi, og.png, OG tags with absolute URLs. Verify PSA wording against the sources in item-sheet.md.

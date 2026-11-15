@@ -7,7 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "node test/sim.test.mjs"
+    "test": "node test/sim.test.mjs",
+    "vendor": "node tools/vendor.mjs"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,8 @@
   },
   "homepage": "https://github.com/aizma-alt/air-naik#readme",
   "devDependencies": {
-    "playwright": "^1.65.1"
+    "esbuild": "^0.28.2",
+    "playwright": "^1.65.1",
+    "three": "^0.187.0"
   }
 }

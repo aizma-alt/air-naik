@@ -131,7 +131,14 @@ async function smoke() {
   assert.ok(await G(() => window.__game.sim.p.stun) > 0, 'Sebarkan did not cost time');
   const node = await import('./bots.mjs'), inPage = await page.evaluate(async () => { const b = await import('/test/bots.mjs'); return [1, 2, 3, 4, 5].map(s => [b.best(s).score, b.play(s, b.casual, 1).score]); });
   assert.deepEqual(inPage, [1, 2, 3, 4, 5].map(s => [node.best(s).score, node.play(s, node.casual, 1).score]), 'bots score differently in the page');
+  assert.equal(await G(() => window.__low), false, 'low-res guard fired on a fast machine');
   assert.deepEqual(errors, [], 'console or page errors');
+  // The slow-phone guard must fire when frames are slow: same page with 40ms burned in every frame (about 25 fps).
+  const slowPage = await ctx.newPage();
+  await slowPage.addInitScript(() => { const raf = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = cb => raf(t => { const end = performance.now() + 40; while (performance.now() < end); cb(t); }); });
+  await slowPage.goto(LOCAL + '?debug&seed=1'); await slowPage.bringToFront();
+  await slowPage.waitForFunction(() => window.__low !== undefined, null, { timeout: 60000 });
+  assert.equal(await slowPage.evaluate(() => window.__low), true, 'low-res guard did not fire at 25 fps');
   console.log('smoke ok, screenshots in test/shots. Headless fps (not a device result):', await sim(() => window.__fps));
 }
 
