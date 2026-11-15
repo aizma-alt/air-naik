@@ -135,7 +135,25 @@ async function smoke() {
   console.log('smoke ok, screenshots in test/shots. Headless fps (not a device result):', await sim(() => window.__fps));
 }
 
+// Art review: one real-time run driven by the casual bot, shots at set moments. Headless, not the phone.
+async function review(round) {
+  const dir = new URL(`review/round${round}/`, import.meta.url); await mkdir(dir, { recursive: true });
+  const ctx = await browser.newContext(PHONE), page = await ctx.newPage();
+  page.on('pageerror', e => console.log('PAGE ERROR', String(e)));
+  const shot = n => page.screenshot({ path: fileURLToPath(new URL(n + '.png', dir)) });
+  await page.goto(LOCAL + '?seed=7'); await page.waitForTimeout(400); await shot('00-first-paint');
+  await page.goto(LOCAL + '?debug&seed=7'); await page.waitForFunction(() => window.__ready);
+  await page.waitForTimeout(2500); await shot('01-landing');
+  await page.locator('#mula').tap(); await page.waitForTimeout(750); await shot('02-cutaway'); await page.waitForTimeout(1200); await shot('03-start');
+  await page.evaluate(async () => { const b = await import('/test/bots.mjs'); setInterval(() => { const s = window.__game.sim; if (!s.done && (s.ping ? s.t > s.ping.until - 2.5 : b.free(s))) b.casual(s); }, 500); });
+  for (const t of [3, 9, 16, 24, 33, 41, 48, 53.5, 58, 63, 66, 71, 75, 79.4, 81]) {
+    await page.waitForFunction(t => window.__game.sim.t >= t, t, { timeout: 30000 }); await shot(`t${String(t).padStart(4, '0')}`);
+  }
+  await page.waitForFunction(() => window.__game.sim.done); await page.waitForTimeout(700); await shot('99-end');
+  console.log('review shots in', fileURLToPath(dir), 'draw calls', await page.evaluate(() => window.__game.view.info().calls), 'fps (headless)', await page.evaluate(() => window.__fps));
+}
+
 try {
-  const i = process.argv.indexOf('--perf');
-  if (i > 0) await perf(process.argv[i + 1] || LOCAL); else await smoke();
+  const i = process.argv.indexOf('--perf'), r = process.argv.indexOf('--review');
+  if (i > 0) await perf(process.argv[i + 1] || LOCAL); else if (r > 0) await review(process.argv[r + 1] || 1); else await smoke();
 } finally { await browser.close(); server.close(); }

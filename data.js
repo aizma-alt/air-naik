@@ -48,7 +48,7 @@ export const BOAT = { x: 7.6, z: 2.6, from: 11, accel: 0.8 }; // from: tiles of 
 // boatIn: seconds the boat is seen approaching before it docks at T.boat.
 export const T = { levels: [0, 10, 30, 55], drift: 62, max: 70, boatIn: 6, boat: 74, move: 78, jacket: 79, board: 80, end: 82 };
 // Water height keyframes [t, y]. Floors reached: Serambi 22s, Dapur 34s, Ruang Tamu 44s, Bilik 58s.
-export const WATER = [[0, 0.05], [10, 0.3], [22, 1.0], [34, 1.3], [44, 1.6], [50, 2.6], [58, 4.0], [70, 6.05]];
+export const WATER = [[0, -0.25], [10, 0], [22, 1.0], [34, 1.3], [44, 1.6], [50, 2.6], [58, 4.0], [70, 6.05]];
 
 export const TUNE = {
   speed: 2.0, // tiles per second, empty hands, dry floor

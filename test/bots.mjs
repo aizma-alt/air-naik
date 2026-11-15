@@ -5,7 +5,7 @@ import { createSim, step, tap, score, sealed, routeLen, waterAt } from '../sim.j
 export const DT = 1 / 30;
 const lvl = i => ROOMS[NODES[i.node].rooms[0]].lvl;
 const SAFE = ['hand', 'para', 'boat'];
-const free = s => { const p = s.p; return !p.intent && !p.path.length && p.busy <= 0 && p.stun <= 0 && !p.locked && !p.lifted && !p.aboard && p.node; };
+export const free = s => { const p = s.p; return !p.intent && !p.path.length && p.busy <= 0 && p.stun <= 0 && !p.locked && !p.lifted && !p.aboard && p.node; };
 const canTake = (p, i) => i.d.wt === 3 ? !p.hands.length : p.hands.length < 2 && !p.hands.some(h => h.d.wt === 3);
 // When a level seals (taps there are refused from then on).
 const sealAt = l => { for (let t = 0; t < 90; t += 0.1) if (sealed({ water: waterAt(t) }, l)) return t; return 99; };

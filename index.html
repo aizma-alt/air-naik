@@ -23,30 +23,36 @@
   #app{position:relative;height:100dvh;max-width:520px;margin:0 auto;overflow:hidden;background:linear-gradient(#0d1b26,#1d3344 60%,#2a4a5c);user-select:none;-webkit-user-select:none}
   canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;opacity:0;transition:opacity .4s}
   .on canvas{opacity:1}
-  .layer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:max(16px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom))}
+  #app::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 46%,#0000 52%,#0b1620a8)}
+  .layer{z-index:2;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:max(16px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom))}
   [hidden]{display:none!important}
-  h1{font-size:54px;margin:14vh 0 6px;letter-spacing:-1px;text-shadow:0 2px 12px #000a}
+  #app:not(.on)::before{content:'';position:absolute;inset:-40px;background:repeating-linear-gradient(100deg,#fff0 0 22px,#cfe2ee22 22px 23px);animation:rain .5s linear infinite}
+  @keyframes rain{to{transform:translate(-8px,40px)}}
+  h1{font:900 60px/1 system-ui,sans-serif;margin:13vh 0 10px;letter-spacing:-2px;color:#fff3d6;text-shadow:0 4px 0 #0d1b26,0 6px 18px #000a}
   #land p{margin:0;max-width:17em;text-shadow:0 1px 8px #000c}
   button{font:700 22px system-ui,sans-serif;padding:14px 44px;border:0;border-radius:14px;background:#f4d35e;color:#1b1b1b;touch-action:manipulation}
   button:disabled{opacity:.45}
-  #mula{margin-top:auto}
+  #mula{margin-top:auto;box-shadow:0 5px 0 #b8962e}
+  #mula:enabled{animation:glow .8s infinite alternate}
+  @keyframes glow{to{box-shadow:0 5px 0 #b8962e,0 0 0 12px #f4d35e40}}
   footer{margin-top:14px;font-size:12px;opacity:.75}
   #end{justify-content:center;gap:10px;background:#0b1620d9}
   #endS{font:800 64px system-ui,sans-serif}
   #end button{margin-top:18px}
   #hud{pointer-events:none}
-  #alert{font-weight:800;font-size:22px;padding:4px 16px;border-radius:999px;color:#111}
+  #alert{font-weight:800;font-size:24px;padding:4px 18px;border-radius:999px;color:#111;box-shadow:0 3px 0 #0006;animation:pop .6s}
+  @keyframes pop{0%{transform:scale(1.7)}}
   #tag{font-size:13px;height:18px;margin-top:3px;text-shadow:0 1px 4px #000}
   #score{position:absolute;right:14px;top:max(16px,env(safe-area-inset-top));font-weight:800;font-size:20px;text-shadow:0 1px 4px #000}
   #gauge{position:absolute;left:12px;top:17%;width:22px;height:42%;border-radius:6px;overflow:hidden;outline:2px solid #fff6;
     background:linear-gradient(to top,#57cc99 0 14.3%,#f4d35e 14.3% 42.9%,#f08a24 42.9% 78.6%,#e5383b 78.6%)}
-  #fill{position:absolute;left:8px;right:0;bottom:0;height:0;background:#2f7fc4;border-top:3px solid #fff}
+  #fill{position:absolute;left:8px;right:0;bottom:0;height:0;background:#a07f55;border-top:3px solid #fff}
   #ping{position:absolute;left:7%;right:7%;top:27%;padding:12px 14px;border-radius:14px;background:#f3fff6;color:#10231a;border-left:8px solid #25a55a;text-align:left;pointer-events:auto;box-shadow:0 8px 24px #0009}
   #ping small{font-weight:700;color:#25a55a}
   #ping p{margin:4px 0 10px;font-size:17px}
   #ping div{display:flex;gap:8px}
   #ping button{flex:1;font-size:15px;padding:12px 6px;border-radius:10px;background:#dfeee4}
-  #toast{margin-top:10px;font-weight:800;font-size:22px;text-shadow:0 2px 6px #000;opacity:0;transition:opacity .25s}
+  #toast{margin-top:10px;font-weight:800;font-size:21px;padding:4px 14px;border-radius:10px;background:#0b1620cc;opacity:0;transition:opacity .25s}
   #toast.show{opacity:1}
   #gap{flex:1}
   #hint{font-weight:700;font-size:18px;padding:6px 14px;border-radius:10px;background:#000a;animation:pulse .9s infinite alternate}
@@ -54,7 +60,8 @@
   #hands{display:flex;gap:8px;margin-top:10px}
   .hand{width:92px;height:58px;border-radius:12px;background:#0009;outline:2px solid #fff5;font-size:11px;line-height:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center}
   .hand b{font-size:24px;font-weight:400}
-  #dbg{position:absolute;right:12px;top:52px;margin:0;font:11px/1.3 monospace;color:#9f9;text-align:right;pointer-events:none}
+  .hand:empty::before{content:'\270B';font-size:24px;opacity:.25}
+  #dbg{z-index:3;position:absolute;right:12px;top:52px;margin:0;font:11px/1.3 monospace;color:#9f9;text-align:right;pointer-events:none}
 </style>
 </head>
 <body>
@@ -125,7 +132,10 @@ ping.onclick = e => { if (e.target.dataset.a) tap(sim, 'ping', e.target.dataset.
 
 function hud(dt) {
   const p = sim.p, hands = $('hands').children;
-  set($('alert'), 'textContent', BM.levels[sim.level]); $('alert').style.background = COLORS[sim.level];
+  if ($('alert')._lvl !== sim.level) { // new alert level: restart the pop animation
+    const a = $('alert'); a._lvl = sim.level; a.textContent = BM.levels[sim.level]; a.style.background = COLORS[sim.level];
+    a.style.animation = 'none'; a.offsetWidth; a.style.animation = '';
+  }
   set($('tag'), 'textContent', sim.level === 2 ? BM.tag : '');
   set($('score'), 'textContent', 'Skor ' + score(sim));
   $('fill').style.height = Math.min(100, sim.t / T.max * 100) + '%'; // the water is the clock

@@ -9,7 +9,7 @@ index.html shell + HUD + loop · data.js all content and tuning · sim.js rules,
 Tests: npm test (rules, 200 seeds) · node test/balance.mjs (bots, pass lines) · node test/browser.mjs (page smoke, shots in test/shots; --perf [url] for Slow 4G load) · test/bots.mjs (bots, run in Node and in the page)
 
 ## Stages
-0 probe DONE · 1 greybox DONE · 2 chaos + balance DONE · NEXT: 3 cutout art · 4 perf gate · 5 share card + OG · 6 testers + launch
+0 probe DONE · 1 greybox DONE · 2 chaos + balance DONE · 3 art DONE · NEXT: 4 perf gate · 5 share card + OG · 6 testers + launch
 
 ## Rules
 - UI alert words: Normal, Waspada, Amaran, Bahaya. Never name any agency or charity in the game. Official level names beyond these are unverified.
@@ -25,7 +25,8 @@ Tests: npm test (rules, 200 seeds) · node test/balance.mjs (bots, pass lines) �
 - Cat (no-deaths rule): bolts once or twice when reached; climbs a level by itself when its floor gets wet, ends on the roof beam and rides the boat unscored ("ikut"). Only a carried cat scores. NEEDS OWNER OK.
 - Messages: 6 per run, one hoax in Amaran, burst of 3 in Bahaya. An open message blocks taps on the house for up to 4s; Sebarkan costs 3s, Semak sumber rasmi is free. No brand, sender or place named. NEEDS PLAYTEST.
 - Floating items wander to another wet slot every 4 to 9s. Floor-edge slosh dropped as redundant (gauge + visible water).
-- Stage 2 tuning: speed 2.5 to 2.0, stairs/ladder x0.4, grab 0.5/0.8/1.3s. Flood times untouched.
+- Stage 2 tuning: speed 2.5 to 2.0, stairs/ladder x0.4, grab 0.5/0.8/1.3s. Flood times untouched, except the yard stays dry through Normal.
+- Art (Stage 3): box models merged into vertex-colour meshes (16 draw calls), teh-tarik water, sticker labels (white disc + system emoji), rain = one LineSegments, lit windows, palm, CSS vignette. Banked items ride in the boat at boarding. 3 review rounds, shots in test/review (headless, gitignored).
 
 ## Measurements
 - Three.js: three.module.min.js imports the UNMINIFIED three.core.js; the importmap in index.html remaps it to the min build. Keep it. Page total was 170KB at Stage 1.
@@ -34,5 +35,5 @@ Tests: npm test (rules, 200 seeds) · node test/balance.mjs (bots, pass lines) �
 - "Idle bot saves some" is read as the minimal-effort bot. No free-points mechanic was added. NEEDS OWNER OK.
 - Phone FPS: NOT MEASURED (adb lists no device). Owner playtested Stage 1 by hand: "seems fine", no numbers.
 
-## Stage 3 needs
-Art only in render.js and index.html CSS: cutout look, flat palette, rain (one LineSegments), lights, landing polish. Review shots go to test/review/roundN (headless, not phone).
+## Stage 4 needs
+Re-measure load after art (local: 2277ms Slow 4G, 2594ms with 4x CPU, 176KB). Try a self-hosted esbuild bundle and keep it only if it measures faster as served. Code and perf audit. Phone FPS if adb is up.
