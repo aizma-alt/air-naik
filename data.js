@@ -51,9 +51,10 @@ export const T = { levels: [0, 10, 30, 55], drift: 62, max: 70, boatIn: 6, boat:
 export const WATER = [[0, 0.05], [10, 0.3], [22, 1.0], [34, 1.3], [44, 1.6], [50, 2.6], [58, 4.0], [70, 6.05]];
 
 export const TUNE = {
-  speed: 2.5, // tiles per second, empty hands, dry floor
+  speed: 2.0, // tiles per second, empty hands, dry floor
   wt: [1, 0.75, 0.5], // speed by heaviest held weight 1/2/3
-  grab: [0.3, 0.5, 0.8], // seconds to pick up, by weight
+  grab: [0.5, 0.8, 1.3], // seconds to pick up, by weight
+  climb: 0.4, // speed x on the stairs and the ladder (not while the water carries him)
   wade: [[0.4, 0.85], [1.0, 0.7]], // [depth below which, speed x]: to knee, knee to chest
   float: 0.5, // speed x when floating
   chest: 1.0, neck: 1.2, height: 1.4, // floating starts at chest depth; feet sit at water minus neck
@@ -61,7 +62,15 @@ export const TUNE = {
   liftMargin: 0.7, // head room left when the water carries him up a level
   lift: 2.5, // speed while being carried up
   valuable: 5, // nilai at or above this counts as valuable for spawn guarantees
+  // Chaos
+  flee2: 0.5, // the cat always bolts once when he reaches for it; chance it bolts a second time
+  drift: [4, 5], // a floating item moves to another slot every 4 to 9s
+  pingTtl: 4, // a message closes by itself after this long; while open it blocks taps on the house
+  sebar: 3, // seconds lost forwarding the hoax
 };
+
+// Messages: [earliest, latest, kind]. One hoax in Amaran, a burst in Bahaya. None after the sweep at 62s.
+export const PINGS = [[13, 22, 'chat'], [32, 42, 'hoax'], [45, 50, 'chat'], [55.5, 56.5, 'chat'], [58, 59, 'chat'], [60.5, 61.5, 'chat']];
 
 export const CAM = { yaw: 45, pitch: 30, view: 10.5, orbit: 0.25, cut: 1.5 };
 
@@ -72,4 +81,9 @@ export const BM = {
   heavy: 'Terlalu berat!', full: 'Tangan penuh!', deep: 'Air dah tinggi sangat!',
   lift: 'Air naik, terapung ke atas!', boat: 'Bot sampai!', move: 'Masa pindah!',
   jacket: 'Pakai jaket', pps: 'Menuju PPS',
+  cat: 'Comot lari!', catUp: 'Comot panjat bumbung!',
+  pingTitle: 'Mesej baru', ok: 'OK', sebarBtn: 'Sebarkan', semakBtn: 'Semak sumber rasmi',
+  sebar: 'Sibuk forward mesej...', semak: 'Bijak. Semak dulu.',
+  hoax: 'Dimajukan banyak kali: "Air akan naik 10 kaki malam ni!! Sebarkan!!"',
+  chats: ['Hujan lebat lagi ke kat sana?', 'Dah makan belum?', 'Jaga diri ya!', 'Bateri telefon cukup tak?', 'Air dah naik ke?', 'Apa-apa roger tau.'],
 };

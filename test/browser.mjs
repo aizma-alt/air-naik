@@ -8,7 +8,7 @@ import { gzipSync } from 'node:zlib';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url), TYPES = { html: 'text/html', js: 'text/javascript' };
+const ROOT = new URL('..', import.meta.url), TYPES = { html: 'text/html', js: 'text/javascript', mjs: 'text/javascript', png: 'image/png' };
 const server = http.createServer(async (req, res) => { // gzip like GitHub Pages does
   const name = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html';
   try {
@@ -56,7 +56,7 @@ async function smoke() {
   const ff = until => page.evaluate(u => { const g = window.__game; while (g.sim.t < u && !g.sim.done) g.step(g.sim, 1 / 30); }, until);
   const touch = async (x, y, z) => { const p = await page.evaluate(a => window.__game.view.toScreen(...a), [x, y, z]); await page.touchscreen.tap(p.x, p.y); };
 
-  await page.goto(LOCAL + '?debug&seed=7');
+  await page.goto(LOCAL + '?debug&calm&seed=7');
   await page.waitForFunction(() => window.__ready);
   await page.waitForTimeout(1200); await shot('1-landing');
   await page.locator('#mula').tap();
@@ -74,7 +74,7 @@ async function smoke() {
   await shot('4-holding');
   await touch(5.0, 6.2, 1.0);
   assert.equal(await sim(() => window.__game.sim.p.intent?.k), 'para', 'tap on the roof deck was not picked');
-  await page.waitForFunction(() => window.__game.sim.banked, null, { timeout: 20000 });
+  await page.waitForFunction(() => window.__game.sim.banked, null, { timeout: 30000 });
   await shot('5-banked');
   assert.equal(await page.locator('#score').textContent(), 'Skor 10');
   await touch(40, 0, 40); // empty ground far away: must pick nothing
@@ -94,18 +94,17 @@ async function smoke() {
   // Second run: two hands, a weight 3 item, wading, floating, carried up, real tap on the docked boat.
   const bx = [], G = f => page.evaluate(f), held = n => page.waitForFunction(n => window.__game.sim.p.hands.length === n, n, { timeout: 20000 });
   const at = k => page.evaluate(k => { const g = window.__game, n = g.nodes[k]; return [n.x, g.rooms[n.rooms[0]].y + 0.3, n.z]; }, k);
-  await page.goto(LOCAL + '?debug&seed=3'); await page.waitForFunction(() => window.__ready);
+  await page.goto(LOCAL + '?debug&calm&seed=3'); await page.waitForFunction(() => window.__ready);
   await page.locator('#mula').tap(); await page.waitForTimeout(1700);
-  const two = await G(() => window.__game.sim.items.filter(i => i.d.wt === 1).slice(0, 2).map(i => i.node));
-  await touch(...await at(two[0])); await held(1); await touch(...await at(two[1])); await held(2);
-  await shot('b1-two-hands');
-  await touch(5.0, 6.2, 1.0); await held(0);
   await touch(...await at(await G(() => window.__game.sim.items.find(i => i.d.wt === 3).node))); await held(1);
   assert.equal(await G(() => window.__game.sim.p.hands[0].d.wt), 3);
   await shot('b2-weight-3');
   const free = await G(() => { const s = window.__game.sim; return ['s1', 's2', 's3'].find(k => !s.items.some(i => i.loc === 'slot' && i.node === k)); });
   await touch(...await at(free)); await held(0);
   assert.equal(await G(() => window.__game.sim.p.room), 'serambi', 'did not walk to the Serambi slot');
+  const two = await G(() => window.__game.sim.items.filter(i => i.d.wt === 1 && i.id !== 'kucing').slice(0, 2).map(i => i.node));
+  await touch(...await at(two[0])); await held(1); await touch(...await at(two[1])); await held(2);
+  await shot('b1-two-hands');
   for (const [t, wait, name] of [[40, 300, 'b3-wading-40s'], [50, 300, 'b4-floating-50s'], [52.4, 1500, 'b5-carried-up-stairs'], [65.1, 900, 'b6-carried-up-hatch'], [70.5, 300, 'b7-boat-far'], [72.5, 300, 'b8-boat-near'], [75, 300, 'b9-boat-docked']]) { await ff(t); await page.waitForTimeout(wait); await shot(name); bx.push(await G(() => window.__game.view.boatAt().x)); }
   assert.ok(bx[4] < bx[5] && bx[5] < bx[6], 'boat does not come in from screen left: ' + bx.slice(4));
   assert.equal(await G(() => window.__game.sim.p.lvl), 2, 'not on the roof at 75s');
@@ -114,6 +113,24 @@ async function smoke() {
   await ff(80.5); await page.waitForTimeout(900);
   assert.ok(await G(() => window.__game.view.boatAt().x) > bx[6] + 10, 'boat does not leave to screen right');
   await shot('b10-boat-leaving');
+  // Third run, chaos on: the message card blocks the house, its buttons work, and the bots give the same scores in the page as in Node.
+  await page.goto(LOCAL + '?debug&seed=11'); await page.waitForFunction(() => window.__ready);
+  await page.locator('#mula').tap(); await page.waitForTimeout(1700);
+  await touch(...await at('t1'));
+  const untilPing = kind => page.evaluate(k => { const g = window.__game; while (!(g.sim.ping && g.sim.ping.kind === k) && !g.sim.done) g.step(g.sim, 1 / 30); }, kind);
+  await untilPing('chat'); await page.waitForTimeout(200);
+  assert.equal(await page.locator('#ping').isVisible(), true, 'message card not shown');
+  await shot('c1-chat');
+  await touch(...await at(await G(() => window.__game.sim.items.find(i => i.id === 'dokumen').node)));
+  assert.equal(await G(() => window.__game.sim.p.intent), null, 'tap went through the message card');
+  await page.locator('#ping button[data-a=ok]').tap(); await page.waitForTimeout(100);
+  assert.equal(await page.locator('#ping').isHidden(), true, 'OK did not close the message');
+  await untilPing('hoax'); await page.waitForTimeout(200); await shot('c2-hoax');
+  assert.equal(await page.locator('#ping button[data-a=ok]').isHidden(), true);
+  await page.locator('#ping button[data-a=sebar]').tap(); await page.waitForTimeout(150);
+  assert.ok(await G(() => window.__game.sim.p.stun) > 0, 'Sebarkan did not cost time');
+  const node = await import('./bots.mjs'), inPage = await page.evaluate(async () => { const b = await import('/test/bots.mjs'); return [1, 2, 3, 4, 5].map(s => [b.best(s).score, b.play(s, b.casual, 1).score]); });
+  assert.deepEqual(inPage, [1, 2, 3, 4, 5].map(s => [node.best(s).score, node.play(s, node.casual, 1).score]), 'bots score differently in the page');
   assert.deepEqual(errors, [], 'console or page errors');
   console.log('smoke ok, screenshots in test/shots. Headless fps (not a device result):', await sim(() => window.__fps));
 }

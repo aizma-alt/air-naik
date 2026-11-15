@@ -47,6 +47,9 @@ export function createView(canvas) {
   const ramp = cube(house, C.stilt, Math.hypot(run, rise), 0.12, 0.7, (sb.x + st.x) / 2, (R.y + B.y) / 2 - 0.06, sb.z);
   ramp.rotation.z = -Math.atan2(rise, run);
   cube(house, C.stilt, 0.5, P.y - B.y + 0.4, 0.08, NODES.hb.x, B.y, NODES.hb.z - 0.4); // hatch ladder
+  const PERCH = [4.6, P.y + 1.62, Z / 2]; // roof beam that stays in the cutaway: where the cat waits if nobody carries it
+  box(house, C.stilt, P.x0, P.x1, P.y + 1.5, PERCH[1], Z / 2 - 0.08, Z / 2 + 0.08);
+  for (const x of [P.x0 + 0.08, P.x1 - 0.08]) cube(house, C.stilt, 0.14, 1.5, 0.14, x, P.y, Z / 2);
   for (const k in NODES) if (NODES[k].slot) cube(house, C.pad, 0.7, 0.03, 0.7, NODES[k].x, ROOMS[NODES[k].rooms[0]].y, NODES[k].z);
 
   // Shell: roofs and the walls facing the camera. Drops away at Mula.
@@ -92,7 +95,7 @@ export function createView(canvas) {
       const g = new THREE.Group(), [w, h, d] = SIZE[i.d.wt - 1];
       cube(g, i.d.c, w, h, d, 0, 0, 0);
       const sp = new THREE.Sprite(icon(i.d.icon)); sp.scale.setScalar(0.75); sp.position.y = h + 0.4; g.add(sp);
-      g.userData = { h, gone: 0 }; scene.add(g); meshes.set(i.id, g);
+      g.userData = { h, gone: 0, snap: true }; scene.add(g); meshes.set(i.id, g);
     }
   }
 
@@ -141,12 +144,15 @@ export function createView(canvas) {
         g.scale.setScalar(hint === 'item' && i.id === 'dokumen' ? 1 + 0.35 * pulse : 1);
         if (i.loc === 'slot') {
           const q = itemPos(sim, i), afloat = q.y > ROOMS[NODES[i.node].rooms[0]].y;
-          g.position.set(q.x, q.y + (afloat ? Math.sin(time * 2 + q.x) * 0.05 - u.h * 0.4 : 0), q.z);
+          v.set(q.x, q.y + (afloat ? Math.sin(time * 2 + q.x) * 0.05 - u.h * 0.4 : 0), q.z);
+          g.position.lerp(v, u.snap ? 1 : Math.min(1, dt * 5)); u.snap = false; // glides when it drifts or the cat bolts
         } else if (i.loc === 'hand') {
           const k = p.hands.indexOf(i);
           g.position.copy(man.position).add(i.d.wt === 3 ? v.set(0, 1.45, 0) : v.set(k ? 0.42 : -0.42, 0.5, 0.2));
         } else if (i.loc === 'para') { g.position.set(3.5 + (np % 5) * 0.55, P.y, 0.35 + Math.floor(np / 5) * 0.55); np++; }
         else if (i.loc === 'boat') { g.position.copy(boat.position).add(v.set((nb % 3 - 1.4) * 0.45, 0.25, (Math.floor(nb / 3) - 0.5) * 0.45)); nb++; }
+        else if (i.loc === 'perch') g.position.lerp(v.set(...PERCH), Math.min(1, dt * 5));
+        else if (i.loc === 'ikut') g.position.copy(boat.position).add(v.set(0.25, 0.25, 0.3));
         else { // gone: drifts off and shrinks
           u.gone = Math.min(1, u.gone + dt / 2.5);
           g.position.x += dt * 1.6; g.position.z += dt * 0.8; g.position.y = sim.water - u.h * 0.4;

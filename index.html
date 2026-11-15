@@ -41,6 +41,11 @@
   #gauge{position:absolute;left:12px;top:17%;width:22px;height:42%;border-radius:6px;overflow:hidden;outline:2px solid #fff6;
     background:linear-gradient(to top,#57cc99 0 14.3%,#f4d35e 14.3% 42.9%,#f08a24 42.9% 78.6%,#e5383b 78.6%)}
   #fill{position:absolute;left:8px;right:0;bottom:0;height:0;background:#2f7fc4;border-top:3px solid #fff}
+  #ping{position:absolute;left:7%;right:7%;top:27%;padding:12px 14px;border-radius:14px;background:#f3fff6;color:#10231a;border-left:8px solid #25a55a;text-align:left;pointer-events:auto;box-shadow:0 8px 24px #0009}
+  #ping small{font-weight:700;color:#25a55a}
+  #ping p{margin:4px 0 10px;font-size:17px}
+  #ping div{display:flex;gap:8px}
+  #ping button{flex:1;font-size:15px;padding:12px 6px;border-radius:10px;background:#dfeee4}
   #toast{margin-top:10px;font-weight:800;font-size:22px;text-shadow:0 2px 6px #000;opacity:0;transition:opacity .25s}
   #toast.show{opacity:1}
   #gap{flex:1}
@@ -59,6 +64,7 @@
     <div id="alert"></div><div id="tag"></div><div id="score"></div>
     <div id="gauge"><div id="fill"></div></div>
     <div id="toast"></div>
+    <div id="ping" hidden><small></small><p></p><div><button data-a="ok"></button><button data-a="sebar"></button><button data-a="semak"></button></div></div>
     <div id="gap"></div>
     <div id="hint" hidden></div>
     <div id="hands"><div class="hand"></div><div class="hand"></div></div>
@@ -87,7 +93,7 @@ const COLORS = ['#57cc99', '#f4d35e', '#f08a24', '#e5383b'];
 const LAZY3D = false; // true: Three.js loads on Mula instead of on the landing (fallback if the 3s gate fails)
 let sim, view, playing = false, last = 0, msgN = 0, toastT = 0, hint = '';
 
-const newSim = () => { sim = createSim(q.has('seed') ? +q.get('seed') : Math.random() * 2 ** 31 | 0); view.setSim(sim); msgN = 0; };
+const newSim = () => { sim = createSim(q.has('seed') ? +q.get('seed') : Math.random() * 2 ** 31 | 0, q.has('calm')); view.setSim(sim); msgN = 0; }; // ?calm = no chaos, for tests
 const set = (el, k, val) => { if (el['_' + k] !== val) el[k] = el['_' + k] = val; }; // write the DOM only on change
 
 async function boot() {
@@ -112,6 +118,11 @@ $('c').addEventListener('pointerdown', e => {
   if (h) tap(sim, h.kind, h.id);
 });
 
+const ping = $('ping'), pingB = ping.querySelectorAll('button');
+ping.querySelector('small').textContent = BM.pingTitle;
+[BM.ok, BM.sebarBtn, BM.semakBtn].forEach((t, k) => pingB[k].textContent = t);
+ping.onclick = e => { if (e.target.dataset.a) tap(sim, 'ping', e.target.dataset.a); };
+
 function hud(dt) {
   const p = sim.p, hands = $('hands').children;
   set($('alert'), 'textContent', BM.levels[sim.level]); $('alert').style.background = COLORS[sim.level];
@@ -126,6 +137,9 @@ function hud(dt) {
   set($('hint'), 'hidden', !hint); set($('hint'), 'textContent', hint === 'item' ? BM.hint1 : BM.hint2);
   if (sim.msgN !== msgN) { msgN = sim.msgN; set($('toast'), 'textContent', sim.msg); toastT = 1.6; }
   toastT -= dt; set($('toast'), 'className', toastT > 0 ? 'show' : '');
+  const g = sim.ping;
+  set(ping, 'hidden', !g);
+  if (g) { set(ping.querySelector('p'), 'textContent', g.text); pingB.forEach((b, k) => set(b, 'hidden', (g.kind === 'hoax') === (k === 0))); }
 }
 
 const ft = [];
