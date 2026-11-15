@@ -70,6 +70,16 @@ const say = (s, m) => { s.msg = m; s.msgN++; };
 export const sealed = (s, lvl) => lvl < 2 && s.water - TUNE.neck + TUNE.height > TUNE.ceil[lvl] - TUNE.liftMargin;
 const SAFE = ['hand', 'para', 'boat'];
 export const score = s => s.final ?? s.items.reduce((a, i) => a + (SAFE.includes(i.loc) ? i.d.nilai : 0), 0);
+// Result title id, by priority (names in BM.titles). awal: more than half the score was on the roof deck before Amaran.
+// dokumen: Dokumen plus every one of Ubat and Wang that was in this house. comot: carried the cat. peti: saved a decoy.
+export function title(s) {
+  const safe = id => s.items.some(i => i.id === id && SAFE.includes(i.loc)), pair = ['ubat', 'wang'].filter(id => s.items.some(i => i.id === id));
+  if (score(s) > 0 && s.early * 2 > score(s)) return 'awal';
+  if (safe('dokumen') && pair.length && pair.every(safe)) return 'dokumen';
+  if (safe('kucing')) return 'comot';
+  if (s.items.some(i => i.d.decoy && SAFE.includes(i.loc))) return 'peti';
+  return 'tabah';
+}
 const canHold = (p, i) => i.d.wt === 3 ? !p.hands.length && !p.floating : p.hands.length < 2 && !p.hands.some(h => h.d.wt === 3);
 const used = (s, k) => s.items.some(i => i.loc === 'slot' && i.node === k);
 const lose = i => i.id === 'kucing' ? 'perch' : 'gone';

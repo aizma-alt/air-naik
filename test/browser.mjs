@@ -85,7 +85,23 @@ async function smoke() {
   await ff(79.2); await page.waitForTimeout(300); await shot('10-jacket-79s');
   await page.waitForFunction(() => !document.getElementById('end').hidden, null, { timeout: 15000 });
   await shot('11-end');
-  assert.equal(await page.locator('#endS').textContent(), 'Skor 10');
+  await page.waitForFunction(() => document.getElementById('card').naturalWidth === 1080, null, { timeout: 10000 });
+  assert.match(await page.locator('#card').getAttribute('alt'), /Skor 10\. Barang selamat: 1 \/ \d+\./, 'card alt text');
+  await shot('11-end');
+  // Kongsi without Web Share (in-app browsers): fallback row appears, Salin pautan copies the link.
+  await page.evaluate(() => { Object.defineProperty(navigator, 'share', { value: undefined, configurable: true }); Object.defineProperty(navigator, 'canShare', { value: undefined, configurable: true }); Object.defineProperty(navigator, 'clipboard', { value: { writeText: async t => { window.__copied = t; } }, configurable: true }); });
+  assert.equal(await page.locator('#more').isHidden(), true);
+  await page.locator('#kongsi').tap(); await page.waitForTimeout(200);
+  assert.equal(await page.locator('#more').isVisible(), true, 'no fallback when Web Share is missing');
+  assert.match(await page.locator('#simpan').getAttribute('href'), /^blob:/);
+  await page.locator('#salin').tap(); await page.waitForTimeout(200);
+  assert.match(await sim(() => window.__copied), /skor 10 .*https:\/\/aizma-alt\.github\.io\/air-naik\/$/, 'copied text');
+  // Kongsi with Web Share and file support: shares the PNG and the link.
+  await page.evaluate(() => { Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true }); Object.defineProperty(navigator, 'share', { value: async d => { window.__shared = { type: d.files[0].type, size: d.files[0].size, text: d.text }; }, configurable: true }); });
+  await page.locator('#kongsi').tap(); await page.waitForTimeout(200);
+  const shared = await sim(() => window.__shared);
+  assert.ok(shared.type === 'image/png' && shared.size > 20000 && shared.text.endsWith('https://aizma-alt.github.io/air-naik/'), 'Web Share payload: ' + JSON.stringify(shared));
+  for (const p of ['og:image', 'og:url']) assert.match(await page.locator(`meta[property="${p}"]`).getAttribute('content'), /^https:\/\/aizma-alt\.github\.io\/air-naik\//, p + ' is not absolute');
   await page.locator('#lagi').tap();
   await page.waitForTimeout(300);
   assert.equal(await page.locator('#land').isHidden(), true, 'Main Semula showed the landing again');
@@ -160,7 +176,23 @@ async function review(round) {
   console.log('review shots in', fileURLToPath(dir), 'draw calls', await page.evaluate(() => window.__game.view.info().calls), 'fps (headless)', await page.evaluate(() => window.__fps));
 }
 
+// node test/browser.mjs --og : renders og.png (1200x630) and a sample result card from share.js.
+async function og() {
+  const page = await (await browser.newContext({ viewport: { width: 1200, height: 630 } })).newPage();
+  await page.goto(LOCAL + 'probe.html');
+  const [ogUrl, cardUrl] = await page.evaluate(async () => {
+    const sh = await import('/share.js'), b = await import('/test/bots.mjs');
+    return [sh.drawOg().toDataURL('image/png'), sh.drawCard(b.best(7).s).toDataURL('image/png')];
+  });
+  const { writeFile } = await import('node:fs/promises');
+  await writeFile(new URL('../og.png', import.meta.url), Buffer.from(ogUrl.split(',')[1], 'base64'));
+  await mkdir(new URL('shots/', import.meta.url), { recursive: true });
+  await writeFile(new URL('shots/card-sample.png', import.meta.url), Buffer.from(cardUrl.split(',')[1], 'base64'));
+  console.log('wrote og.png and test/shots/card-sample.png');
+}
+
 try {
+  if (process.argv.includes('--og')) { await og(); process.exit(0); }
   const i = process.argv.indexOf('--perf'), r = process.argv.indexOf('--review');
   if (i > 0) await perf(process.argv[i + 1] || LOCAL); else if (r > 0) await review(process.argv[r + 1] || 1); else await smoke();
 } finally { await browser.close(); server.close(); }

@@ -2,7 +2,7 @@
 // createSim(seed, true) is the calm game (no pings, bolting or drifting) for the base rules; chaos is checked on top.
 import assert from 'node:assert/strict';
 import { ITEMS, NODES, T, BM, TUNE } from '../data.js';
-import { createSim, spawn, step, tap, score, pathFrom } from '../sim.js';
+import { createSim, spawn, step, tap, score, pathFrom, title } from '../sim.js';
 
 const SEEDS = 200, DT = 1 / 30, SAFE = ['hand', 'para', 'boat'];
 const roomOf = i => NODES[i.node].rooms[0];
@@ -133,6 +133,19 @@ assert.equal(JSON.stringify(createSim(9, true).items.map(i => i.node)), JSON.str
   }
   assert.ok(bolted >= caught * 0.8, `cat bolted in only ${bolted} of ${caught} catches`);
   assert.ok(caught >= 30, 'a determined chaser rarely catches the cat: ' + caught + '/40');
+}
+
+// Result titles, by priority.
+{
+  const seed = [...Array(50).keys()].find(n => createSim(n, true).items.some(i => i.id === 'ubat' || i.id === 'wang'));
+  const s = createSim(seed, true), put = (f, loc) => s.items.filter(f).forEach(i => i.loc = loc);
+  assert.equal(title(s), 'tabah');
+  put(i => i.d.decoy, 'para'); assert.equal(title(s), 'peti');
+  put(i => i.id === 'kucing', 'hand'); assert.equal(title(s), 'comot');
+  put(i => i.id === 'dokumen', 'boat'); assert.equal(title(s), 'comot', 'Jaguh Dokumen without Ubat and Wang');
+  put(i => i.id === 'ubat' || i.id === 'wang', 'para'); assert.equal(title(s), 'dokumen');
+  s.early = score(s) / 2; assert.equal(title(s), 'dokumen', 'Beg Siap Awal at exactly half');
+  s.early = score(s); assert.equal(title(s), 'awal');
 }
 
 console.log(`ok: ${SEEDS} seeds. items per run ${JSON.stringify(counts)}, cat slots used ${cats.size}/15, ${ITEMS.length} items defined`);

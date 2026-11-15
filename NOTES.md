@@ -1,15 +1,15 @@
 # NOTES (keep under 40 lines)
 
 Game: Air Naik! Malaysian flood evacuation game. Three.js, primitives only, portrait mobile, casual BM. Public repo, hosted on GitHub Pages: https://aizma-alt.github.io/air-naik/
-Docs: docs/driver.md (run loop), docs/design.md (intent, rules, flows), docs/item-sheet.md (items).
+Docs: docs/driver.md (run loop), docs/design.md (intent, rules, flows), docs/item-sheet.md (items, source checks).
 Test device: Redmi Note 15 Pro 5G. Real FPS: open ?debug on the phone (fps avg, p5 over the run, ready ms). ?seed=N repeats a run, ?calm turns chaos off.
 
 ## Files
-index.html shell + HUD + loop · data.js all content and tuning · sim.js rules, no Three.js (createSim, tap, step, score) · render.js Three.js view + picking · vendor/three.min.js built by npm run vendor (rerun when render.js uses a new THREE class) · probe.html Stage 0 probe
-Tests: npm test (rules, 200 seeds) · node test/balance.mjs (bots, pass lines) · node test/browser.mjs (page smoke, shots in test/shots; --perf [url] for Slow 4G load) · test/bots.mjs (bots, run in Node and in the page)
+index.html shell + HUD + loop · data.js all content and tuning · sim.js rules, no Three.js (createSim, tap, step, score, title) · render.js Three.js view + picking · share.js result card, og image, Kongsi · og.png · vendor/three.min.js built by npm run vendor (rerun when render.js uses a new THREE class) · probe.html Stage 0 probe
+Tests: npm test (rules, 200 seeds) · node test/balance.mjs (bots, pass lines) · node test/browser.mjs (page smoke; --perf [url] Slow 4G load; --review N art shots; --og rebuilds og.png) · test/bots.mjs
 
 ## Stages
-0 probe DONE · 1 greybox DONE · 2 chaos + balance DONE · 3 art DONE · 4 perf DONE (phone FPS open) · NEXT: 5 share card + OG · 6 testers + launch
+0 to 5 DONE (phone FPS and the hand checks below still open) · NEXT: 6 external testers and launch, by hand
 
 ## Rules
 - UI alert words: Normal, Waspada, Amaran, Bahaya. Never name any agency or charity in the game. Official level names beyond these are unverified.
@@ -17,24 +17,23 @@ Tests: npm test (rules, 200 seeds) · node test/balance.mjs (bots, pass lines) �
 - Pass: first tap <3s throttled 4G; p5 FPS 30+; 4/5 testers finish unaided; wording matches sources; link preview renders.
 - Never reload the whole project; patch small files.
 
-## Decisions so far (all tunable in data.js)
-- Layout: Serambi, Ruang Tamu, Dapur in a row at floor heights 1.0/1.6/1.3 (flood order per design); Bilik above Ruang Tamu; Para deck above Bilik. Upper floors see-through in the cutaway.
-- Never stuck: a level seals when a floating head is within 0.7 of its ceiling (ground 52s, Bilik 65s); taps there are refused and the water carries him up, also off the ladder if he was heading down.
+## Decisions (all tunable in data.js)
+- Layout: Serambi, Ruang Tamu, Dapur in a row at floor heights 1.0/1.6/1.3 (flood order per design); Bilik above Ruang Tamu; Para deck above Bilik. Upper floors see-through.
+- Never stuck: a level seals when a floating head is within 0.7 of its ceiling (ground 52s, Bilik 65s); taps there are refused and the water carries him up.
 - Tap empty slot = put down the last item picked up. Tap Para or docked boat = put down everything. Banked items stay banked. Picking = nearest target centre on screen.
-- Boat (playtest): seen approaching from screen left for 6s, docks at 74s, leaves to screen right.
-- Cat (no-deaths rule): bolts once or twice when reached; climbs a level by itself when its floor gets wet, ends on the roof beam and rides the boat unscored ("ikut"). Only a carried cat scores. NEEDS OWNER OK.
-- Messages: 6 per run, one hoax in Amaran, burst of 3 in Bahaya. An open message blocks taps on the house for up to 4s; Sebarkan costs 3s, Semak sumber rasmi is free. No brand, sender or place named. NEEDS PLAYTEST.
-- Floating items wander to another wet slot every 4 to 9s. Floor-edge slosh dropped as redundant (gauge + visible water).
-- Stage 2 tuning: speed 2.5 to 2.0, stairs/ladder x0.4, grab 0.5/0.8/1.3s. Flood times untouched, except the yard stays dry through Normal.
-- Art (Stage 3): box models merged into vertex-colour meshes (16 draw calls), teh-tarik water, sticker labels (white disc + system emoji), rain = one LineSegments, lit windows, palm, CSS vignette. Banked items ride in the boat at boarding. 3 review rounds, shots in test/review (headless, gitignored).
+- Boat (playtest): approaches from screen left for 6s, docks at 74s, leaves to screen right.
+- Cat (no-deaths rule): bolts once or twice when reached; climbs by itself when its floor gets wet, ends on the roof beam and rides the boat unscored. Only a carried cat scores. NEEDS OWNER OK.
+- Messages: 6 per run, one hoax in Amaran, burst of 3 in Bahaya. An open message blocks taps on the house for up to 4s; Sebarkan costs 3s, Semak sumber rasmi is free. NEEDS PLAYTEST.
+- Floating items wander every 4 to 9s. Slosh dropped as redundant. Tuning: speed 2.0, stairs/ladder x0.4, grab 0.5/0.8/1.3s; yard dry through Normal.
+- Art: merged vertex-colour box models (16 draw calls), teh-tarik water, sticker labels (system emoji), rain = one LineSegments.
+- Titles: awal = over half the score banked before Amaran; dokumen = Dokumen plus every Ubat/Wang present in that house; then comot, peti, tabah.
+- Card tip is "Kalau diarah berpindah, pindah segera. Jangan tunggu air naik." (sourced). The design's waterproof-container example could not be sourced, so it is not used. NEEDS OWNER OK.
+- Kongsi: Web Share with the PNG if allowed, else link only, else Salin pautan + Simpan gambar (<a download>) + long-press on the card image.
 
 ## Measurements
-- Three.js 0.187.0 is self hosted and tree-shaken (136KB gzip, one host). The CDN build pulled the unminified core; with a remap it was 176KB and 2277ms.
-- Stage 4 load (Slow 4G, cold, median of 5, local gzip server): 2162ms, 2477ms with 4x CPU, 155KB over 5 requests. Pass, still within 1s of the line. LAZY3D flag in index.html = load on Mula, not needed.
-- Audit: 16 draw calls, opaque canvas, pixel ratio capped at 2, drops to 65% resolution if frames 20 to 140 average under 40 fps (tested by forcing 25 fps), load failure shows a BM message. Not handled: WebGL context loss.
-- Balance, 100 seeds: zero taps = 0 (clock never starts); minimal effort (one tap on the hinted Dokumen) scores 10 in 100%; casual bot 49% of nilai; best bot (best of 24 plans, 0.25s reaction) 82%, saves every item in 0%, every non-decoy in 1%. Bot strength check: clears every non-decoy at 2.5x speed in 100%.
-- "Idle bot saves some" is read as the minimal-effort bot. No free-points mechanic was added. NEEDS OWNER OK.
-- Phone FPS: NOT MEASURED (adb lists no device). Owner playtested Stage 1 by hand: "seems fine", no numbers.
-
-## Stage 5 needs
-share.js: result card (1080x1350 canvas), titles (s.early holds score banked before Amaran), Kongsi, og.png, OG tags with absolute URLs. Verify PSA wording against the sources in item-sheet.md.
+- Load (Slow 4G, cold, median of 5): 2207ms live after Stage 4, 2515ms with 4x CPU, 156KB over 5 requests. Pass. Three.js self hosted and tree-shaken (the CDN min build pulls the unminified core).
+- Slow-phone guard: 65% resolution if frames 20 to 140 average under 40 fps (tested by forcing 25 fps). Not handled: WebGL context loss.
+- Balance, 100 seeds: zero taps 0 (clock never starts); minimal effort (one tap on Dokumen) 10 in 100%; casual bot 49% of nilai; best bot (24 plans, 0.25s reaction) 82%, saves every item 0%, every non-decoy 0 to 1%; clears every non-decoy at 2.5x speed.
+- "Idle bot saves some" is read as the minimal-effort bot; no free-points mechanic was added. NEEDS OWNER OK.
+- Sources (2026-11-16): 10 kit items and the tip match the DOSM-hosted article; alert words match the flood portal legend; Ready2go link is 404 (UNVERIFIED); "bersedia berpindah" has a news report only.
+- NOT MEASURED OR TESTED: phone FPS (adb lists no device), in-app browser share/download, link preview, real 4G.
