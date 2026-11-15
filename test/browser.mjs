@@ -63,14 +63,14 @@ async function smoke() {
   await page.waitForTimeout(700); await shot('2-cutaway-mid');
   await page.waitForTimeout(1300); await shot('3-start');
   assert.equal(await sim(() => window.__game.sim.t), 0, 'clock ran before the first tap in the house');
-  assert.equal(await page.locator('#hint').textContent(), 'Ketuk barang');
+  assert.equal(await page.locator('#hint').textContent(), 'Klik barang');
 
   // Tap the Dokumen box through the real pointer path, then the roof deck.
   const doc = await sim(() => { const g = window.__game, i = g.sim.items.find(i => i.id === 'dokumen'), n = g.nodes[i.node]; return [n.x, g.rooms[n.rooms[0]].y + 0.3, n.z]; });
   await touch(...doc);
   assert.equal(await sim(() => window.__game.sim.p.intent?.item.id), 'dokumen', 'tap on Dokumen was not picked');
   await page.waitForFunction(() => window.__game.sim.p.hands.length === 1, null, { timeout: 15000 });
-  assert.equal(await page.locator('#hint').textContent(), 'Ketuk tempat tinggi');
+  assert.equal(await page.locator('#hint').textContent(), 'Klik tempat tinggi');
   await shot('4-holding');
   await touch(5.0, 6.2, 1.0);
   assert.equal(await sim(() => window.__game.sim.p.intent?.k), 'para', 'tap on the roof deck was not picked');
@@ -92,7 +92,7 @@ async function smoke() {
   assert.equal(await sim(() => window.__game.sim.t), 0);
   await shot('12-main-semula');
   // Second run: two hands, a weight 3 item, wading, floating, carried up, real tap on the docked boat.
-  const G = f => page.evaluate(f), held = n => page.waitForFunction(n => window.__game.sim.p.hands.length === n, n, { timeout: 20000 });
+  const bx = [], G = f => page.evaluate(f), held = n => page.waitForFunction(n => window.__game.sim.p.hands.length === n, n, { timeout: 20000 });
   const at = k => page.evaluate(k => { const g = window.__game, n = g.nodes[k]; return [n.x, g.rooms[n.rooms[0]].y + 0.3, n.z]; }, k);
   await page.goto(LOCAL + '?debug&seed=3'); await page.waitForFunction(() => window.__ready);
   await page.locator('#mula').tap(); await page.waitForTimeout(1700);
@@ -106,10 +106,14 @@ async function smoke() {
   const free = await G(() => { const s = window.__game.sim; return ['s1', 's2', 's3'].find(k => !s.items.some(i => i.loc === 'slot' && i.node === k)); });
   await touch(...await at(free)); await held(0);
   assert.equal(await G(() => window.__game.sim.p.room), 'serambi', 'did not walk to the Serambi slot');
-  for (const [t, wait, name] of [[40, 300, 'b3-wading-40s'], [50, 300, 'b4-floating-50s'], [52.4, 1500, 'b5-carried-up-stairs'], [65.1, 900, 'b6-carried-up-hatch'], [75, 300, 'b7-boat']]) { await ff(t); await page.waitForTimeout(wait); await shot(name); }
+  for (const [t, wait, name] of [[40, 300, 'b3-wading-40s'], [50, 300, 'b4-floating-50s'], [52.4, 1500, 'b5-carried-up-stairs'], [65.1, 900, 'b6-carried-up-hatch'], [70.5, 300, 'b7-boat-far'], [72.5, 300, 'b8-boat-near'], [75, 300, 'b9-boat-docked']]) { await ff(t); await page.waitForTimeout(wait); await shot(name); bx.push(await G(() => window.__game.view.boatAt().x)); }
+  assert.ok(bx[4] < bx[5] && bx[5] < bx[6], 'boat does not come in from screen left: ' + bx.slice(4));
   assert.equal(await G(() => window.__game.sim.p.lvl), 2, 'not on the roof at 75s');
-  await touch(7.0, 6.35, 2.2);
+  await touch(7.6, 6.35, 2.6);
   assert.equal(await G(() => window.__game.sim.p.intent?.k), 'boat', 'tap on the docked boat was not picked');
+  await ff(80.5); await page.waitForTimeout(900);
+  assert.ok(await G(() => window.__game.view.boatAt().x) > bx[6] + 10, 'boat does not leave to screen right');
+  await shot('b10-boat-leaving');
   assert.deepEqual(errors, [], 'console or page errors');
   console.log('smoke ok, screenshots in test/shots. Headless fps (not a device result):', await sim(() => window.__fps));
 }

@@ -196,7 +196,7 @@ export function step(s, dt) {
   s.water = waterAt(t);
   s.level = T.levels.filter(x => t >= x).length - 1;
   if (at(T.drift)) for (const i of s.items) if (i.loc === 'slot') i.loc = 'gone'; // swept away
-  if (t >= T.boat - 2 && t < T.boat) { s.boat.state = 'arriving'; s.boat.k = (t - T.boat + 2) / 2; }
+  if (t >= T.boat - T.boatIn && t < T.boat) { s.boat.state = 'arriving'; s.boat.k = (t - T.boat + T.boatIn) / T.boatIn; }
   if (at(T.boat)) { s.boat.state = 'docked'; say(s, BM.boat); }
   if (at(T.move)) { p.locked = true; p.intent = null; p.busy = 0; go(s, 'dock'); say(s, BM.move); }
   if (at(T.jacket)) { p.jacket = true; say(s, BM.jacket); }

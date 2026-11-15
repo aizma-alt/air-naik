@@ -82,10 +82,12 @@ export function createView(canvas) {
     return icons[ch] = new THREE.SpriteMaterial({ map: t, alphaTest: 0.4 });
   }
 
-  let sim, meshes = new Map(), time = 0, mode = 'land', yaw = 0, yaw0 = 0, yawT = 0, cut = 1;
+  const yawR = CAM.yaw * Math.PI / 180, RX = Math.cos(yawR), RZ = -Math.sin(yawR); // screen right, in world x and z
+  boat.rotation.y = yawR;
+  let leave = 0, sim, meshes = new Map(), time = 0, mode = 'land', yaw = 0, yaw0 = 0, yawT = 0, cut = 1;
   function setSim(s) {
     for (const m of meshes.values()) scene.remove(m);
-    meshes = new Map(); sim = s;
+    meshes = new Map(); sim = s; leave = 0;
     for (const i of s.items) {
       const g = new THREE.Group(), [w, h, d] = SIZE[i.d.wt - 1];
       cube(g, i.d.c, w, h, d, 0, 0, 0);
@@ -127,8 +129,9 @@ export function createView(canvas) {
       const p = sim.p, b = sim.boat, pulse = 0.5 + 0.5 * Math.sin(time * 7);
       water.position.y = sim.water;
       boat.visible = b.state !== 'away';
-      const far = b.state === 'arriving' ? (1 - b.k) ** 2 * 14 : b.state === 'leaving' ? b.k * b.k * 12 : 0;
-      boat.position.set(BOAT.x + far, sim.water + 0.15, BOAT.z + (b.state === 'leaving' ? far * 0.5 : 0));
+      leave = b.state === 'leaving' ? leave + dt : 0; // keeps drifting behind the end screen
+      const along = b.state === 'arriving' ? -BOAT.from * (1 - b.k) ** 1.6 : leave * leave * BOAT.accel; // tiles toward screen right
+      boat.position.set(BOAT.x + along * RX, sim.water + 0.15, BOAT.z + along * RZ);
       if (p.aboard) man.position.copy(boat.position).add(v.set(-0.4, 0.2, 0)); else man.position.set(p.x, p.y, p.z);
       jacket.visible = p.jacket;
       deck.material.emissive.setScalar(hint === 'para' ? 0.4 * pulse : 0);
@@ -181,5 +184,5 @@ export function createView(canvas) {
     const r = canvas.getBoundingClientRect(); v.set(x, y, z).project(cam);
     return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
   }
-  return { setSim, begin, frame, pick, resize, toScreen };
+  return { setSim, begin, frame, pick, resize, toScreen, boatAt: () => toScreen(boat.position.x, boat.position.y, boat.position.z) };
 }

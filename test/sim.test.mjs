@@ -37,7 +37,8 @@ for (let seed = 1; seed <= SEEDS; seed++) {
   assert.ok(tap(s, 'slot', 's1'));
   run(s, T.max);
   assert.equal(s.p.lvl, 2, `idle seed ${seed}: not on the roof at max water (lvl ${s.p.lvl})`);
-  assert.equal(s.boat.state, 'away', 'boat before max water');
+  assert.notEqual(s.boat.state, 'docked', 'boat docked before max water');
+  run(s, T.boat - 0.1); assert.equal(s.boat.state, 'arriving', 'boat docked early');
   run(s, 999);
   assert.ok(s.t >= 78 && s.t <= 82.1, 'run length ' + s.t);
   assert.equal(score(s), 0, 'idle run scored');

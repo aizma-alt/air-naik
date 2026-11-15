@@ -41,10 +41,12 @@ export const NODES = {
   pa: n('para', 4.3, 1.6), dock: n('para', 5.6, 2.2),
 };
 export const LINKS = [['sb', 'st'], ['hb', 'ht']]; // the only edges that change level
-export const BOAT = { x: 7.0, z: 2.2 }; // docked position, beside the roof deck
+// Boat: docked position beside the roof deck. It comes in from screen left and leaves to screen right.
+export const BOAT = { x: 7.6, z: 2.6, from: 11, accel: 0.8 }; // from: tiles of approach; accel: tiles/s2 when leaving
 
 // Timeline (seconds after the first tap). levels: start of Normal, Waspada, Amaran, Bahaya.
-export const T = { levels: [0, 10, 30, 55], drift: 62, max: 70, boat: 74, move: 78, jacket: 79, board: 80, end: 82 };
+// boatIn: seconds the boat is seen approaching before it docks at T.boat.
+export const T = { levels: [0, 10, 30, 55], drift: 62, max: 70, boatIn: 6, boat: 74, move: 78, jacket: 79, board: 80, end: 82 };
 // Water height keyframes [t, y]. Floors reached: Serambi 22s, Dapur 34s, Ruang Tamu 44s, Bilik 58s.
 export const WATER = [[0, 0.05], [10, 0.3], [22, 1.0], [34, 1.3], [44, 1.6], [50, 2.6], [58, 4.0], [70, 6.05]];
 
@@ -66,7 +68,7 @@ export const CAM = { yaw: 45, pitch: 30, view: 10.5, orbit: 0.25, cut: 1.5 };
 export const BM = {
   levels: ['Normal', 'Waspada', 'Amaran', 'Bahaya'],
   tag: 'bersedia berpindah',
-  hint1: 'Ketuk barang', hint2: 'Ketuk tempat tinggi',
+  hint1: 'Klik barang', hint2: 'Klik tempat tinggi',
   heavy: 'Terlalu berat!', full: 'Tangan penuh!', deep: 'Air dah tinggi sangat!',
   lift: 'Air naik, terapung ke atas!', boat: 'Bot sampai!', move: 'Masa pindah!',
   jacket: 'Pakai jaket', pps: 'Menuju PPS',
