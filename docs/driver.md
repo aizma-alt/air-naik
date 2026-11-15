@@ -1,0 +1,25 @@
+# Driver: run Air Naik! stages
+
+## Loop per stage
+1. Read NOTES.md, docs/design.md, docs/item-sheet.md. Nothing else until needed.
+2. Build only that stage's files. Patch small files, never rewrite.
+3. Test: Playwright headless for logic; real device via adb on the Redmi when available (adb devices; open the LAN URL in Chrome; screencap with adb exec-out screencap -p; FPS from ?debug or dumpsys gfxinfo). If adb is unavailable, ask for a hand test. Never claim a device result you did not measure.
+4. Update NOTES.md (under 40 lines), commit clearly, git push origin HEAD:main.
+5. Report briefly: done, measured numbers, what to check by hand. Continue unless the GATE applies.
+
+## Stages
+1 **Greybox loop.** git mv index.html probe.html (keep it); new index.html shell (100dvh, Three.js 0.187.0 importmap, touch first). data.js (items, BM strings, alert levels and timings, rooms, tuning). sim.js (no Three.js import, so a bot can drive it: waypoint graph, hands, weights, seeded spawn, water states and timeline, boat, score, run end at departure). render.js (orthographic isometric camera, dollhouse cutaway, plain boxes, raycast picking, pixel ratio capped at 2; life jacket can be a coloured box). HUD: water gauge against alert bands, alert level, score, hands. End screen: score + Main Semula. Start flow, water logic and spawning exactly as in docs/design.md. ?debug shows FPS. No chaos, art, share, OG yet.
+   1b: early perf check on the greybox, on phone and with Playwright CDP Slow 4G; record load time to first tap (landing included) and FPS. If first tap is over 3s throttled, decide the canvas 2D fallback now and plan render.js accordingly.
+   **GATE (the only stop):** report Stage 1 results and wait for the playtest verdict ("continue" or a list of changes).
+2 **Water, chaos, PSA mechanics.** Playwright bot across 50+ seeds: idle bot saves some, best bot cannot save all, run 60 to 90s. Review sim.js for logic bugs. No gate unless bot stats fail.
+3 **Art.** Cutout look, flat palette, rain, lights, landing polish, readable in a 15s screen record. No stop. Self review with phone screenshots, up to 3 polish rounds, keep screenshots for the final review.
+4 **Performance gate.** Throttled load, FPS on phone, size budget (consider a self hosted esbuild bundle), full code and perf audit. Fallback decision only if 1b was marginal.
+5 **Ending, share card, OG tags, Kongsi** per docs/design.md. Test <a download> in in-app browsers. Absolute URLs. Re-verify PSA lines and item/alert strings against sources. Claude cannot test the social app link preview; leave it for the final checklist.
+6 External testers and launch (by hand).
+
+## Run mode
+Stage 1 ends at the GATE. After the playtest verdict says continue, run Stages 2 to 5 back to back with no stops. Stop only if blocked, a usage limit hits (resume from NOTES.md), a measured pass/fail fails and needs a decision (e.g. canvas 2D fallback), or something here looks wrong. Push after every stage. When Stage 5 is done, post one final checklist: measured numbers vs pass/fail, art screenshots to review, link preview test, in-app share test, 5 tester round, and anything unverified.
+
+## Hard rules
+Free tools only, no asset files, no deaths, no ads, no donation link. Alert words Normal, Waspada, Amaran, Bahaya only. No agency or charity names in the game. Footer "Projek kreatif, bukan produk rasmi." Casual BM. Never claim virality.
+Public repo: no personal names, emails or private plans in files or commits. Never force push or delete outside the repo. If blocked or anything here looks wrong, stop and say so.

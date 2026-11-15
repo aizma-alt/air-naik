@@ -1,0 +1,27 @@
+{
+  "name": "air-naik",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "node test/sim.test.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aizma-alt/air-naik.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/aizma-alt/air-naik/issues"
+  },
+  "homepage": "https://github.com/aizma-alt/air-naik#readme",
+  "devDependencies": {
+    "playwright": "^1.65.1"
+  }
+}

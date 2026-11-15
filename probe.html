@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Air Naik! probe</title>
+<style>
+  html,body{margin:0;background:#101820;color:#e8f1f2;font:14px/1.4 system-ui,sans-serif}
+  body{padding:12px;min-height:100dvh}
+  h1{font-size:18px;margin:0 0 8px}
+  canvas{width:100%;max-width:360px;height:160px;display:block;border-radius:8px;background:#000}
+  pre{white-space:pre-wrap;word-break:break-word;background:#0b1117;padding:10px;border-radius:8px;font-size:12px}
+  button{font:inherit;padding:10px 14px;margin:4px 6px 4px 0;border:0;border-radius:8px;background:#1b6f64;color:#fff}
+</style>
+</head>
+<body>
+<h1>Air Naik! device probe (Stage 0)</h1>
+<canvas id="c"></canvas>
+<div>
+  <button id="share">Test share image</button>
+  <button id="copy">Copy report</button>
+</div>
+<pre id="out">running...</pre>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.min.js"}}
+</script>
+<script type="module">
+const R = {};
+const out = document.getElementById('out');
+const show = () => out.textContent = Object.entries(R).map(([k,v])=>k+': '+v).join('\n');
+const t0 = performance.now();
+
+R.ua = navigator.userAgent;
+R.screen = innerWidth+'x'+innerHeight+' dpr '+devicePixelRatio;
+R.touch = 'ontouchstart' in window;
+R.dvh = CSS.supports('height','100dvh');
+R.share = typeof navigator.share;
+try {
+  const f = new File([new Blob(['x'],{type:'image/png'})],'a.png',{type:'image/png'});
+  R.canShareFiles = navigator.canShare ? navigator.canShare({files:[f]}) : 'no canShare';
+} catch(e){ R.canShareFiles = 'error '+e.message; }
+R.clipboardWrite = !!(navigator.clipboard && navigator.clipboard.writeText);
+const gl2 = document.createElement('canvas').getContext('webgl2');
+R.webgl2 = !!gl2;
+show();
+
+try {
+  const t1 = performance.now();
+  const THREE = await import('three');
+  R.threeLoadMs = Math.round(performance.now()-t1);
+  R.threeRev = THREE.REVISION;
+  const canvas = document.getElementById('c');
+  const w = 360, h = 160;
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(w,h,false);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x101820);
+  const cam = new THREE.PerspectiveCamera(50,w/h,0.1,100);
+  cam.position.set(0,2,6);
+  scene.add(new THREE.AmbientLight(0xffffff,0.7));
+  const d = new THREE.DirectionalLight(0xffffff,1); d.position.set(3,5,4); scene.add(d);
+  const cubes = [];
+  for(let i=0;i<60;i++){
+    const m = new THREE.Mesh(new THREE.BoxGeometry(.6,.6,.6), new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(i/60,.6,.55)}));
+    m.position.set((i%10-4.5)*.7,(Math.floor(i/10)-2.5)*.7,0); scene.add(m); cubes.push(m);
+  }
+  R.firstFrameMs = Math.round(performance.now()-t0);
+  let frames=0, last=performance.now(), start=last, min=1e9, done=false;
+  function loop(now){
+    cubes.forEach((c,i)=>{c.rotation.x+=.02;c.rotation.y+=.03});
+    renderer.render(scene,cam);
+    frames++;
+    const dt = now-last; last=now;
+    if(frames>5 && 1000/dt<min) min=1000/dt;
+    if(now-start<5000){ requestAnimationFrame(loop); }
+    else { R.fpsAvg = Math.round(frames/((now-start)/1000)); R.fpsMinInstant = Math.round(min); R.note='60 cubes, 5s test'; show(); }
+  }
+  requestAnimationFrame(loop);
+} catch(e){ R.threeError = e.message; }
+R.totalMs = Math.round(performance.now()-t0);
+show();
+
+document.getElementById('share').onclick = async () => {
+  const c = document.createElement('canvas'); c.width=600;c.height=315;
+  const x = c.getContext('2d'); x.fillStyle='#2a9d8f'; x.fillRect(0,0,600,315);
+  x.fillStyle='#fff'; x.font='bold 40px sans-serif'; x.fillText('Air Naik! share test',40,170);
+  const blob = await new Promise(r=>c.toBlob(r,'image/png'));
+  const file = new File([blob],'airnaik-test.png',{type:'image/png'});
+  try {
+    if(!navigator.share) throw new Error('navigator.share missing');
+    if(navigator.canShare && !navigator.canShare({files:[file]})) throw new Error('canShare files = false');
+    await navigator.share({files:[file],title:'Air Naik!',text:'test'});
+    R.shareResult='ok';
+  } catch(e){ R.shareResult='fail: '+e.name+' '+e.message; }
+  show();
+};
+document.getElementById('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(out.textContent); R.copy='ok'; } catch(e){ R.copy='fail '+e.message; }
+  show();
+};
+</script>
+</body>
+</html>
