@@ -43,7 +43,7 @@ One Three.js scene, one house model, same OrthographicCamera throughout.
 1. First paint is HTML/CSS only: dark rainy gradient, "Air Naik!", "Hujan tak berhenti. Selamatkan apa yang boleh.", disabled Mula, footer.
 2. When Three.js is ready (target under 3s throttled 4G, measured at Mula enabled with 3D visible): fade in the 3D exterior with walls, roof, rain, puddles around the stilts, slow yaw orbit.
 3. Tap Mula: orbit eases to the isometric angle and the roof and front walls drop away (cutaway, about 1.5s).
-4. Two pulsing hints in Normal: "Ketuk barang" (outline Dokumen Penting), then "Ketuk tempat tinggi" (Para) once holding. The clock (water) starts on the first tap inside the house.
+4. Two pulsing hints in Normal: "Klik barang" (outline Dokumen Penting), then "Klik tempat tinggi" (Para) once holding. The clock (water) starts on the first tap inside the house.
 5. Main Semula skips the landing and starts directly in the cutaway.
 Rain is one LineSegments draw call (tune or drop in Stage 4). Stage 1 builds orbit and cutaway with boxes, no rain; Stage 3 adds rain, lights, polish. If throttled first interactive fails in Stage 1b, the landing becomes the CSS poster only and Three.js loads on Mula behind a short fade.
 
