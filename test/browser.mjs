@@ -149,6 +149,18 @@ async function smoke() {
   assert.deepEqual(inPage, [1, 2, 3, 4, 5].map(s => [node.best(s).score, node.play(s, node.casual, 1).score]), 'bots score differently in the page');
   assert.equal(await G(() => window.__low), false, 'low-res guard fired on a fast machine');
   assert.deepEqual(errors, [], 'console or page errors');
+  // share.js fails to load: the run must still end with the score and a working Main Semula.
+  const flaky = await ctx.newPage();
+  await flaky.route('**/share.js', r => r.abort());
+  await flaky.goto(LOCAL + '?debug&calm&seed=7'); await flaky.waitForFunction(() => window.__ready);
+  await flaky.locator('#mula').tap(); await flaky.waitForTimeout(1700);
+  await flaky.evaluate(() => { const g = window.__game; g.tap(g.sim, 'item', 'dokumen'); while (g.sim.t < 81.5) g.step(g.sim, 1 / 30); });
+  await flaky.waitForFunction(() => !document.getElementById('end').hidden, null, { timeout: 15000 });
+  assert.equal(await flaky.locator('#endT').textContent(), 'Skor 10', 'no plain score when the card cannot load');
+  assert.equal(await flaky.locator('#card').isHidden() && await flaky.locator('#kongsi').isHidden(), true);
+  await flaky.locator('#lagi').tap(); await flaky.waitForTimeout(300);
+  assert.equal(await flaky.evaluate(() => window.__game.sim.t === 0 && document.getElementById('end').hidden), true, 'Main Semula dead after a failed card');
+  await flaky.close();
   // The slow-phone guard must fire when frames are slow: same page with 40ms burned in every frame (about 25 fps).
   const slowPage = await ctx.newPage();
   await slowPage.addInitScript(() => { const raf = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = cb => raf(t => { const end = performance.now() + 40; while (performance.now() < end); cb(t); }); });

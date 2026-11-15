@@ -45,6 +45,7 @@
   .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
   #end button,#simpan{font:700 19px system-ui,sans-serif;padding:12px 22px;border-radius:12px}
   #lagi,#salin,#simpan{background:#ffffff26;color:#fff;text-decoration:none}
+  #endT{font:800 56px system-ui,sans-serif}
   #more p{margin:4px 0 8px;font-size:13px;user-select:text;-webkit-user-select:text}
   #hud{pointer-events:none}
   #alert{font-weight:800;font-size:24px;padding:4px 18px;border-radius:999px;color:#111;box-shadow:0 3px 0 #0006;animation:pop .6s}
@@ -91,6 +92,7 @@
   </div>
   <div id="end" class="layer" hidden>
     <img id="card" alt="">
+    <div id="endT" hidden></div>
     <div class="row"><button id="kongsi">Kongsi</button><button id="lagi">Main Semula</button></div>
     <div id="more" hidden><p></p><div class="row"><button id="salin">Salin pautan</button><a id="simpan" download="air-naik.png">Simpan gambar</a></div></div>
     <footer>Projek kreatif, bukan produk rasmi.</footer>
@@ -116,7 +118,7 @@ async function boot() {
   view = createView($('c')); newSim(); view.frame(0);
   $('app').classList.add('on'); $('mula').disabled = false;
   window.__ready = Math.round(performance.now()); // ms from navigation to Mula enabled with 3D drawn
-  if (debug) window.__game = { get sim() { return sim; }, view, step, nodes: NODES, rooms: ROOMS };
+  if (debug) window.__game = { get sim() { return sim; }, view, step, tap, nodes: NODES, rooms: ROOMS };
   requestAnimationFrame(loop);
 }
 
@@ -124,17 +126,23 @@ function start(skip) {
   $('land').hidden = $('end').hidden = true; $('hud').hidden = false;
   view.begin(skip); playing = true; ft.length = 0;
   sharing ||= import('./share.js'); // fetched during the run, not on the first paint
+  sharing.catch(() => {}); // a failed fetch is handled in showEnd
 }
 
 // Result card: drawn on a canvas, shown as an image so a long press can save it.
+// If share.js cannot load (flaky network), the run still ends: plain score and Main Semula, and the next run tries again.
 async function showEnd() {
-  const sh = await sharing, r = sh.summary(sim);
-  cardFile = await sh.cardFile(sh.drawCard(sim));
-  URL.revokeObjectURL($('card').src);
-  $('card').src = $('simpan').href = URL.createObjectURL(cardFile);
-  $('card').alt = `${r.title}. Skor ${r.score}. ${BM.saved}: ${r.saved.length} / ${r.total}.`;
-  $('more').hidden = true; $('more').querySelector('p').textContent = BM.saveHint; $('salin').textContent = 'Salin pautan';
-  $('hud').hidden = true; $('end').hidden = false;
+  let ok = true;
+  try {
+    const sh = await sharing, r = sh.summary(sim);
+    cardFile = await sh.cardFile(sh.drawCard(sim));
+    URL.revokeObjectURL($('card').src);
+    $('card').src = $('simpan').href = URL.createObjectURL(cardFile);
+    $('card').alt = `${r.title}. Skor ${r.score}. ${BM.saved}: ${r.saved.length} / ${r.total}.`;
+    $('more').querySelector('p').textContent = BM.saveHint; $('salin').textContent = 'Salin pautan';
+  } catch (e) { console.error(e); ok = false; sharing = null; $('endT').textContent = 'Skor ' + score(sim); }
+  $('card').hidden = $('kongsi').hidden = !ok; $('endT').hidden = ok;
+  $('more').hidden = true; $('hud').hidden = true; $('end').hidden = false;
 }
 $('kongsi').onclick = async () => { if (await (await sharing).kongsi(cardFile, sim) === 'fallback') $('more').hidden = false; };
 $('salin').onclick = async () => { // if the clipboard is blocked, show the link so it can be copied by hand
@@ -182,7 +190,7 @@ function loop(now) {
   const dt = Math.min((now - last) / 1000, 0.1) || 0; last = now;
   if (playing) {
     step(sim, dt); hud(dt);
-    if (sim.done) { playing = false; showEnd().catch(fail); }
+    if (sim.done) { playing = false; showEnd(); }
   }
   view.frame(dt, playing ? hint : '');
   // Slow phone guard: if frames 20 to 140 average under 40 fps, draw at 65% resolution from then on.
