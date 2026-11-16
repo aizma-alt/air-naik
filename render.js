@@ -14,7 +14,7 @@ export function createView(canvas) {
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x1d3344);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x8fb37a, 1.9));
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x8fb37a, 1.9); scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xfff4e0, 2.1); // one shadow light; three flat tones per box
   sun.position.set(13, 18, 12); sun.target.position.set(4.5, 0, 1.5); sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.04;
@@ -47,6 +47,17 @@ export function createView(canvas) {
   const rain = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(rp, 3)),
     new THREE.LineBasicMaterial({ color: C.rain, transparent: true, opacity: 0.35, depthWrite: false }));
   rain.frustumCulled = false; scene.add(rain);
+
+  // Flood water detail. Streaks slide with the current (three copies a loop apart, so the slide never shows a gap).
+  // Rings are rain drops and the man's wake: one instanced mesh, each ring grows and fades into the water colour.
+  const FLOW = 26, fb = batch();
+  for (let i = 0; i < 60; i++) { const x = -22 + Math.random() * FLOW, z = -14 + Math.random() * 38, l = 0.7 + Math.random() * 1.6; for (const o of [-FLOW, 0, FLOW]) fb.add(0, x + o, x + o + l, 0, 0.004, z, z + 0.05); }
+  const streaks = fb.mesh(new THREE.MeshBasicMaterial({ color: 0xf6e7c8, transparent: true, opacity: 0.2, depthWrite: false })); streaks.frustumCulled = false; scene.add(streaks);
+  const RINGS = 30, ringGeo = new THREE.RingGeometry(0.82, 1, 20); ringGeo.rotateX(-Math.PI / 2);
+  const rings = new THREE.InstancedMesh(ringGeo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.55, depthWrite: false }), RINGS); rings.frustumCulled = false; scene.add(rings);
+  const ring = Array.from({ length: RINGS }, () => ({ x: 0, z: 0, age: Math.random(), life: 1, size: 0.4 })), dummy = new THREE.Group(), foam = new THREE.Color(0xfff6e0), wet = new THREE.Color(C.water), tint = new THREE.Color();
+  let ri = 0, wake = 0, flow = 0, mood = 0, shake = 0, lvl = 0;
+  const ripple = (x, z, size) => { const r = ring[ri = (ri + 1) % RINGS]; r.x = x; r.z = z; r.age = 0; r.life = 0.7 + size; r.size = size; };
 
   // Fallback people and boat, built from boxes. upgrade() swaps in the baked models when models.bin arrives.
   const man = new THREE.Group(); scene.add(man);
@@ -145,26 +156,41 @@ export function createView(canvas) {
     const pitch = CAM.pitch * Math.PI / 180;
     cam.position.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)).multiplyScalar(70).add(target);
     cam.lookAt(target);
+    if (sim && sim.level !== lvl) { if (sim.level > lvl) shake = 0.35; lvl = sim.level; } // a small jolt when the alert rises
+    if (shake > 0) { shake -= dt; target.x += Math.sin(time * 90) * 0.05 * shake / 0.35; target.y += Math.cos(time * 70) * 0.04 * shake / 0.35; cam.position.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)).multiplyScalar(70).add(target); cam.lookAt(target); }
     rain.position.y = -((time * 16) % LOOP);
     arrow.visible = false;
     if (sim) {
-      const p = sim.p, b = sim.boat, pulse = 0.5 + 0.5 * Math.sin(time * 7);
+      const p = sim.p, b = sim.boat, pulse = 0.5 + 0.5 * Math.sin(time * 7), moved0 = Math.hypot(p.x - lastX, p.z - lastZ) > 1e-4;
       rain.material.opacity = 0.28 + 0.08 * sim.level; // heavier as the alert rises
+      mood += (sim.level / 3 - mood) * Math.min(1, dt * 0.8); hemi.intensity = 1.9 - 0.45 * mood; sun.intensity = 2.1 - 0.6 * mood; // the day darkens with the alert; lit windows stand out
       water.position.y = sim.water;
+      flow = (flow + dt * (0.5 + 0.5 * sim.level)) % FLOW; streaks.position.set(flow, sim.water + 0.012, 0);
+      wake -= dt;
+      if (wake < 0) { // a rain drop somewhere, or the man's wake when he wades
+        const wading = sim.water > p.y + 0.05 && !p.aboard;
+        if (wading && moved0) { ripple(p.x, p.z, 0.55); wake = 0.22; } else { ripple(-3 + Math.random() * 16, -3 + Math.random() * 12, 0.2 + Math.random() * 0.25); wake = 0.16 - 0.035 * sim.level; }
+      }
+      ring.forEach((r, k) => {
+        r.age += dt / r.life; const a = Math.min(1, r.age);
+        dummy.position.set(r.x, sim.water + 0.016, r.z); dummy.scale.setScalar(a >= 1 ? 0 : 0.08 + r.size * a); dummy.updateMatrix(); rings.setMatrixAt(k, dummy.matrix);
+        rings.setColorAt(k, tint.lerpColors(foam, wet, a));
+      });
+      rings.instanceMatrix.needsUpdate = true; rings.instanceColor.needsUpdate = true;
       boat.visible = b.state !== 'away';
       leave = b.state === 'leaving' ? leave + dt : 0; // keeps drifting behind the end screen
       const along = b.state === 'arriving' ? -DOCK.from * (1 - b.k) ** 1.6 : leave * leave * DOCK.accel; // tiles toward screen right
       boat.position.set(DOCK.x + along * RX, sim.water + 0.2 + Math.sin(time * 2.2) * 0.04, DOCK.z + along * RZ);
       boat.rotation.z = Math.sin(time * 1.7) * 0.03; boat.updateMatrixWorld();
       if (pack) wave.rotation.z = waveUp + Math.sin(time * 9) * 0.35; else wave.rotation.x = waveUp + Math.sin(time * 9) * 0.5; // the jiran waves
-      const moved = Math.hypot(p.x - lastX, p.z - lastZ) > 1e-4, heavy = p.hands[0] && p.hands[0].d.wt === 3;
+      const moved = moved0, heavy = p.hands[0] && p.hands[0].d.wt === 3, panic = sim.level === 3 && !p.hands.length; // Bahaya with empty hands: he runs with his arms up
       if (moved) face = Math.atan2(p.x - lastX, p.z - lastZ); // turn to where he walks
       lastX = p.x; lastZ = p.z;
       if (p.aboard) { boat.localToWorld(man.position.set(0.25, deckY, 0)); man.rotation.y = yawR + Math.PI / 2; }
       else { man.position.set(p.x, p.y + (moved && !p.floating ? Math.abs(Math.sin(time * 12)) * 0.07 : p.floating ? Math.sin(time * 3) * 0.05 : 0), p.z); man.rotation.y = face; }
       arms.forEach((a, k) => { // carry pose, swim, or walking swing
         const holding = heavy || p.hands[k];
-        a.rotation.x = heavy ? -2.9 : holding ? -1.25 : p.floating ? -1.4 + Math.sin(time * 5 + k * 3) * 0.5 : moved ? Math.sin(time * 12 + k * Math.PI) * 0.7 : 0;
+        a.rotation.x = heavy ? -2.9 : holding ? -1.25 : p.floating ? -1.4 + Math.sin(time * 5 + k * 3) * 0.5 : moved ? (panic ? -2.7 + Math.sin(time * 14 + k * Math.PI) * 0.35 : Math.sin(time * 12 + k * Math.PI) * 0.7) : 0;
         a.rotation.z = (k ? 1 : -1) * ((p.floating && !holding ? 0.5 : 0) - rest);
       });
       const walk = moved && !p.floating && !p.aboard;
@@ -176,7 +202,8 @@ export function createView(canvas) {
       let np = 0, nb = 0;
       for (const i of sim.items) {
         const g = meshes.get(i.id), u = g.userData;
-        g.scale.setScalar(1);
+        u.pop = u.loc && u.loc !== i.loc ? 1 : Math.max(0, (u.pop || 0) - dt * 4); u.loc = i.loc; // a little bounce when it is picked up, put down or banked
+        g.scale.setScalar(1 + 0.3 * Math.sin(u.pop * Math.PI));
         if (i.loc === 'slot') {
           const q = itemPos(sim, i), afloat = q.y > ROOMS[NODES[i.node].rooms[0]].y + NODES[i.node].at[2];
           v.set(q.x, q.y + (afloat ? Math.sin(time * 2 + q.x) * 0.05 - Math.min(u.h * 0.4, 0.3) : 0), q.z);
@@ -238,6 +265,7 @@ export function createView(canvas) {
   }
   // Fetches the baked models and swaps them in. Resolves false if they cannot load: the box models stay.
   const models = url => loadPack(url).then(pk => { upgrade(pk); return true; }, () => false);
+  const hintAt = () => arrow.visible ? toScreen(arrow.position.x, arrow.position.y - 0.8, arrow.position.z) : null; // where the first-run hand should tap
   const look = (x, y, z, w) => { HOUSE.set(x, y, z); width = w; frustum(); }; // art checks only: close-up on a spot
-  return { setSim, begin, frame, pick, resize, quality, toScreen, models, look, boatAt: () => toScreen(boat.position.x, boat.position.y, boat.position.z), info: () => renderer.info.render };
+  return { setSim, begin, frame, pick, resize, quality, toScreen, models, look, hintAt, boatAt: () => toScreen(boat.position.x, boat.position.y, boat.position.z), info: () => renderer.info.render };
 }

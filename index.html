@@ -83,6 +83,12 @@
   /* Message: looks like a chat app (header, wallpaper, bubble, quick replies). No logo or app name. */
   #ping{position:absolute;left:6%;right:6%;top:24%;border:3px solid var(--ink);border-radius:20px;overflow:hidden;background:#e9dfd3;color:#111;text-align:left;pointer-events:auto;box-shadow:0 8px 0 var(--ink);font-family:system-ui,sans-serif;font-weight:400;animation:slide .25s cubic-bezier(.3,1.5,.5,1)}
   @keyframes slide{from{transform:translateY(-40px) scale(.9);opacity:0}}
+  .plus{position:fixed;z-index:5;pointer-events:none;font:900 34px/1 var(--f);color:#ffe14d;animation:rise .9s ease-out forwards}
+  @keyframes rise{0%{opacity:0;transform:translate(-50%,-20%) scale(.5)}20%{opacity:1;transform:translate(-50%,-70%) scale(1.2)}100%{opacity:0;transform:translate(-50%,-240%) scale(1)}}
+  #score.bump{animation:bump .35s} @keyframes bump{40%{transform:scale(1.25) rotate(4deg)}}
+  #hand{position:fixed;z-index:5;pointer-events:none;font-size:46px;line-height:1;transform:translate(-50%,0);animation:poke .9s ease-in-out infinite;filter:drop-shadow(0 3px 0 #0006)}
+  @keyframes poke{50%{transform:translate(-50%,16px) scale(.9)}}
+  #flash{position:fixed;inset:0;z-index:3;pointer-events:none;background:#fff;opacity:0} #flash.on{animation:flash .5s} @keyframes flash{8%{opacity:.22}30%{opacity:.05}40%{opacity:.16}}
   #ping header{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#0b6b5f;color:#fff}
   #ping header i{width:36px;height:36px;border-radius:50%;background:#cfe9e3;display:grid;place-items:center;font-style:normal;font-size:19px}
   #ping header b{display:block;font-size:15px} #ping header small{font-size:11px;opacity:.85}
@@ -99,6 +105,7 @@
 <div id="app">
   <canvas id="c"></canvas>
   <button id="mute" class="alt" hidden aria-label="Bunyi">🔊</button>
+  <div id="flash"></div><div id="hand" hidden>👆</div>
   <div id="hud" class="layer" hidden>
     <div id="alert"></div><div id="tag"></div><div id="score"></div>
     <div id="gauge"><div id="fill"></div></div>
@@ -146,12 +153,15 @@ import { createSim, step, tap, score } from './sim.js';
 const $ = id => document.getElementById(id), q = new URLSearchParams(location.search), debug = q.has('debug');
 const COLORS = ['#57cc99', '#f4d35e', '#f08a24', '#e5383b'];
 const LAZY3D = false; // true: Three.js loads on Mula instead of on the landing (fallback if the 3s gate fails)
-let sharing, cardFile, audio, sim, view, playing = false, last = 0, msgN = 0, toastT = 0, hint = '', frames = 0, slow = 0, low = false;
+let sharing, cardFile, audio, sim, view, playing = false, last = 0, msgN = 0, toastT = 0, hint = '', frames = 0, slow = 0, low = false, stepT = 0, thunderT = 6, first = true;
+try { first = !localStorage.getItem('airnaik-seen'); } catch { /* private mode: the hint hand shows every time */ }
 function fail(e) { console.error(e); $('land').querySelector('p').textContent = BM.fail; } // WebGL missing or the script did not load
 
 const newSim = () => { sim = createSim(q.has('seed') ? +q.get('seed') : Math.random() * 2 ** 31 | 0, q.has('calm')); view.setSim(sim); msgN = 0; was = {}; }; // ?calm = no chaos, for tests
 const set = (el, k, val) => { if (el['_' + k] !== val) el[k] = el['_' + k] = val; }; // write the DOM only on change
-const sfx = name => audio && audio.play(name);
+const BUZZ = { bank: 20, no: [30, 40, 30], alert: 120, cat: 40, horn: [80, 60, 80], sweep: 200, win: [40, 60, 40, 60, 120] }; // phone vibration, off with the mute button
+const sfx = name => { if (!audio) return; audio.play(name); if (BUZZ[name] && !audio.muted && navigator.vibrate) navigator.vibrate(BUZZ[name]); };
+const restart = (el, cls) => { el.classList.remove(cls); el.offsetWidth; el.classList.add(cls); }; // replay a CSS animation
 
 async function boot() {
   const { createView } = await import('./render.js');
@@ -171,7 +181,8 @@ function start(skip) {
   view.begin(skip); playing = true; ft.length = 0;
   sharing ||= import('./share.js'); // fetched during the run, not on the first paint
   sharing.catch(() => {}); // a failed fetch is handled in showEnd
-  if (!audio) import('./audio.js').then(m => { audio = m.createAudio(); $('mute').textContent = audio.muted ? '🔇' : '🔊'; }).catch(() => {}); // sound is optional
+  if (!audio) import('./audio.js').then(m => { audio = m.createAudio(); $('mute').textContent = audio.muted ? '🔇' : '🔊'; if (!skip) sfx('whoosh'); }).catch(() => {}); // sound is optional
+  else { audio.level(0); audio.motor(false); sfx('click'); }
 }
 $('mute').onclick = () => { if (audio) $('mute').textContent = audio.toggle() ? '🔇' : '🔊'; };
 $('kreditBtn').onclick = e => { e.preventDefault(); $('kredit').hidden = false; };
@@ -210,18 +221,26 @@ $('c').addEventListener('pointerdown', e => {
 const ping = $('ping'), pingB = ping.querySelectorAll('button'), bubble = $('bubble').children;
 ping.querySelector('header b').textContent = BM.chatName; ping.querySelector('header small').textContent = BM.chatSub;
 [BM.ok, BM.sebarBtn, BM.semakBtn].forEach((t, k) => pingB[k].textContent = t);
-ping.onclick = e => { if (e.target.dataset.a) tap(sim, 'ping', e.target.dataset.a); };
+ping.onclick = e => { if (e.target.dataset.a) { tap(sim, 'ping', e.target.dataset.a); sfx('click'); } };
 
 // Sounds follow what changed since the last frame.
-const NOISE = { [BM.cat]: 'cat', [BM.catUp]: 'cat', [BM.heavy]: 'no', [BM.full]: 'no', [BM.deep]: 'no', [BM.catRun]: 'no', [BM.boat]: 'horn', [BM.lift]: 'splash', [BM.pps]: 'horn' };
+const NOISE = { [BM.cat]: 'cat', [BM.catUp]: 'cat', [BM.heavy]: 'no', [BM.full]: 'no', [BM.deep]: 'no', [BM.catRun]: 'no', [BM.boat]: 'horn', [BM.lift]: 'splash', [BM.pps]: 'horn', [BM.sebar]: 'whoosh', [BM.semak]: 'good', [BM.jacket]: 'click' };
 let was = {};
-function sounds(p) {
-  const now = { lvl: sim.level, hands: p.hands.length, banked: sim.items.filter(i => i.loc === 'para' || i.loc === 'boat').length, ping: sim.ping, float: p.floating };
+function plus(n, x, y) { const d = document.createElement('div'); d.className = 'plus ol'; d.textContent = '+' + n; d.style.left = x + 'px'; d.style.top = y + 'px'; $('app').append(d); setTimeout(() => d.remove(), 900); }
+function sounds(p, dt) {
+  const now = { lvl: sim.level, hands: p.hands.length, banked: sim.items.filter(i => i.loc === 'para' || i.loc === 'boat').length, ping: sim.ping, float: p.floating, score: score(sim), x: p.x, z: p.z, t: sim.t, boat: sim.boat.state };
   if (was.lvl !== undefined) {
-    if (now.lvl > was.lvl) { sfx('alert'); audio && audio.level(now.lvl); }
+    if (now.lvl > was.lvl) { audio && audio.level(now.lvl); sfx('alert'); }
     if (now.banked > was.banked) sfx('bank'); else if (now.hands > was.hands) sfx('grab'); else if (now.hands < was.hands) sfx('drop');
+    if (now.score > was.score) { const at = view.toScreen(p.x, p.y + 1.7, p.z); plus(now.score - was.score, at.x, at.y); restart($('score'), 'bump'); } // points fly up from him
     if (now.ping && now.ping !== was.ping) sfx('ping');
     if (now.float && !was.float) sfx('splash');
+    if (now.t >= T.drift && was.t < T.drift) sfx('sweep');
+    if (now.boat !== was.boat && audio) audio.motor(now.boat === 'arriving' || now.boat === 'leaving');
+    stepT -= dt;
+    if (stepT < 0 && !p.floating && !p.aboard && Math.hypot(now.x - was.x, now.z - was.z) > 1e-4) { stepT = 0.27; sfx(sim.water > p.y + 0.05 ? 'slosh' : 'step'); } // footsteps: wood, or water once it is in the house
+    thunderT -= dt;
+    if (now.lvl >= 2 && thunderT < 0) { thunderT = 9 + Math.random() * 9; sfx('thunder'); restart($('flash'), 'on'); } // lightning from Amaran on
   }
   was = now;
 }
@@ -252,7 +271,8 @@ function hud(dt) {
     bubble[3].textContent = `8:${String(10 + Math.floor(sim.t / 2)).padStart(2, '0')} PTG`;
     pingB.forEach((b, k) => b.hidden = hoax === (k === 0));
   }
-  sounds(p);
+  sounds(p, dt);
+  if (first && sim.banked) { first = false; try { localStorage.setItem('airnaik-seen', '1'); } catch { /* fine */ } } // the hint hand is for the first run only
 }
 
 const ft = [];
@@ -264,6 +284,8 @@ function loop(now) {
     if (sim.done) { playing = false; showEnd(); }
   }
   view.frame(dt, playing ? hint : '');
+  const tapHere = first && playing && hint ? view.hintAt() : null; // first run: a hand taps where the hint points
+  set($('hand'), 'hidden', !tapHere); if (tapHere) { $('hand').style.left = tapHere.x + 'px'; $('hand').style.top = tapHere.y + 'px'; }
   // Slow phone guard: if frames 20 to 140 average under 40 fps, draw at 65% resolution with no shadows from then on.
   if (!low && dt > 0 && document.visibilityState === 'visible' && ++frames > 20) {
     slow += dt;
