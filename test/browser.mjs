@@ -8,7 +8,7 @@ import { gzipSync } from 'node:zlib';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url), TYPES = { html: 'text/html', js: 'text/javascript', mjs: 'text/javascript', png: 'image/png' };
+const ROOT = new URL('..', import.meta.url), TYPES = { html: 'text/html', js: 'text/javascript', mjs: 'text/javascript', png: 'image/png', woff2: 'font/woff2' };
 const server = http.createServer(async (req, res) => { // gzip like GitHub Pages does
   const name = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html';
   try {
@@ -193,8 +193,9 @@ async function review(round) {
 // node test/browser.mjs --og : renders og.png (1200x630) and a sample result card from share.js.
 async function og() {
   const page = await (await browser.newContext({ viewport: { width: 1200, height: 630 } })).newPage();
-  await page.goto(LOCAL + 'probe.html');
+  await page.goto(LOCAL); await page.waitForFunction(() => window.__ready);
   const [ogUrl, cardUrl] = await page.evaluate(async () => {
+    await document.fonts.load('700 40px Fredoka');
     const sh = await import('/share.js'), b = await import('/test/bots.mjs');
     return [sh.drawOg().toDataURL('image/png'), sh.drawCard(b.best(7).s).toDataURL('image/png')];
   });

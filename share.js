@@ -3,7 +3,7 @@ import { BM, ITEMS } from './data.js';
 import { score, title } from './sim.js';
 
 export const LINK = 'https://aizma-alt.github.io/air-naik/';
-const SAFE = ['hand', 'para', 'boat'], LEVEL = ['#57cc99', '#f4d35e', '#f08a24', '#e5383b'], CREAM = '#fff3d6', FONT = 'system-ui, sans-serif';
+const SAFE = ['hand', 'para', 'boat'], LEVEL = ['#57cc99', '#f4d35e', '#f08a24', '#e5383b'], CREAM = '#fff3d6', FONT = 'Fredoka, system-ui, sans-serif';
 
 // Storm sky, rain streaks and a band of flood water at the bottom.
 function backdrop(w, h, waterTop) {

@@ -53,6 +53,13 @@ At about 78s: "Masa pindah!" for 2s, life jacket, boarding with whatever is in h
 Titles by priority: Beg Siap Awal (most score banked before Amaran), Dokumen Penting (Dokumen plus every Ubat and Wang in that house saved), Sayang Comot (cat saved), Hero Peti Sejuk (saved a decoy), default Tabah Sampai Akhir.
 Kongsi: Web Share where available, else full screen card to screenshot plus Salin pautan. In-app social browsers can lack Web Share (Stage 0 probe). Static 1200x630 og.png.
 
+## Look and sound (owner review of Stage 5)
+- Landing shows the kampung: river behind, road in front, neighbours on stilts, palms, paddy. Mula zooms into the main house and the roof and front walls fade out.
+- Rooms have bold wall colours and furniture. Pak cik wears a T-shirt and kain pelikat. Messages look like a chat app with no logo or app name.
+- Font: Fredoka (OFL). UI is chunky and outlined, like a game, not a web page.
+- Sound list. Effects: tap, footsteps on wood, pick up, put down, bank on the Para, refused (hands full or too heavy), alert level up (three steps of urgency), message ding, message sent whoosh, good-choice chime, cat meow, splash into water, wading slosh, carried up by the water, sweep at 62s, boat motor and horn, life jacket click, boat leaving, result jingle, button click, zoom whoosh. Ambience: rain (light and heavy layers), distant thunder, flowing flood water, frogs and crickets on the landing. Music: one loop, calm at Normal, tenser by Bahaya.
+- Sound never blocks play: it starts on the Mula tap, has a mute button, and the game works without it.
+
 ## PSA layer (subtle)
 Teach through scoring and pacing, never lectures. Re-verify every tip against sources in Stage 5.
 - Early prep is cheap at Normal/Waspada; by Bahaya it costs more (panic, ping spam).
