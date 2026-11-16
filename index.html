@@ -203,7 +203,7 @@ async function showEnd() {
   } catch (e) { console.error(e); ok = false; sharing = null; $('endT').textContent = 'Skor ' + score(sim); }
   $('card').hidden = $('kongsi').hidden = !ok; $('endT').hidden = ok;
   $('more').hidden = true; $('hud').hidden = true; $('end').hidden = false;
-  sfx('win');
+  audio && audio.motor(false); sfx('win'); // the boat has gone: its engine fades under the result
 }
 $('kongsi').onclick = async () => { if (await (await sharing).kongsi(cardFile, sim) === 'fallback') $('more').hidden = false; };
 $('salin').onclick = async () => { // if the clipboard is blocked, show the link so it can be copied by hand

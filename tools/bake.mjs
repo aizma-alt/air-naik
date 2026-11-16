@@ -15,9 +15,8 @@ export const MODELS = {
   cat: ['pets/animal-cat.glb', { h: 0.62, split: 1 }],
   boat: ['boats/boat-row-large.glb', { h: 0.78, turn: Math.PI / 2 }],
   peti: ['furniture/kitchenFridge.glb', { h: 1.35 }], tv: ['furniture/televisionVintage.glb', { h: 0.62 }], radio: ['furniture/radio.glb', { h: 0.36 }],
-  ...Object.fromEntries(['loungeSofa', 'loungeChair', 'tableCoffee', 'cabinetTelevision', 'bookcaseOpenLow', 'sideTable', 'sideTableDrawers', 'lampRoundFloor', 'lampRoundTable',
-    'rugRectangle', 'rugRounded', 'pottedPlant', 'bedSingle', 'cabinetBedDrawerTable', 'kitchenStove', 'kitchenSink', 'kitchenCabinet', 'kitchenCabinetDrawer', 'kitchenCabinetUpper',
-    'table', 'tableCloth', 'chair', 'chairCushion', 'cardboardBoxClosed', 'cardboardBoxOpen', 'books', 'benchCushion', 'stoolBar', 'trashcan', 'coatRackStanding', 'kitchenMicrowave', 'toaster']
+  ...Object.fromEntries(['cabinetTelevision', 'bookcaseOpenLow', 'sideTable', 'sideTableDrawers', 'lampRoundFloor', 'lampRoundTable', 'pottedPlant', 'cabinetBedDrawerTable',
+    'kitchenStove', 'kitchenSink', 'kitchenCabinet', 'kitchenCabinetDrawer', 'tableCloth', 'chairCushion', 'cardboardBoxClosed', 'cardboardBoxOpen', 'benchCushion', 'trashcan', 'coatRackStanding'] // every name here is placed by furnish() in models.js
     .map(n => [n, [`furniture/${n}.glb`, { s: F }]])),
 };
 
