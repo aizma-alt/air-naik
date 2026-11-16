@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "node test/sim.test.mjs",
-    "vendor": "node tools/vendor.mjs"
+    "vendor": "node tools/vendor.mjs",
+    "bake": "node tools/bake.mjs"
   },
   "repository": {
     "type": "git",

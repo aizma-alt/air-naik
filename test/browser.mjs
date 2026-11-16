@@ -58,6 +58,8 @@ async function smoke() {
 
   await page.goto(LOCAL + '?debug&calm&seed=7');
   await page.waitForFunction(() => window.__ready);
+  await page.waitForFunction(() => window.__pack !== undefined);
+  assert.equal(await sim(() => window.__pack), true, 'baked models did not load');
   await page.waitForTimeout(1200); await shot('1-landing');
   await page.locator('#mula').tap({ force: true });
   await page.waitForTimeout(700); await shot('2-cutaway-mid');
@@ -66,7 +68,7 @@ async function smoke() {
   assert.equal(await page.locator('#hint').textContent(), 'Klik barang');
 
   // Tap the Dokumen box through the real pointer path, then the roof deck.
-  const doc = await sim(() => { const g = window.__game, i = g.sim.items.find(i => i.id === 'dokumen'), n = g.nodes[i.node]; return [n.x, g.rooms[n.rooms[0]].y + 0.3, n.z]; });
+  const doc = await sim(() => { const g = window.__game, i = g.sim.items.find(i => i.id === 'dokumen'), n = g.nodes[i.node]; return [n.x + n.at[0], g.rooms[n.rooms[0]].y + n.at[2] + 0.2, n.z + n.at[1]]; });
   await touch(...doc);
   assert.equal(await sim(() => window.__game.sim.p.intent?.item.id), 'dokumen', 'tap on Dokumen was not picked');
   await page.waitForFunction(() => window.__game.sim.p.hands.length === 1, null, { timeout: 15000 });
@@ -109,7 +111,7 @@ async function smoke() {
   await shot('12-main-semula');
   // Second run: two hands, a weight 3 item, wading, floating, carried up, real tap on the docked boat.
   const bx = [], G = f => page.evaluate(f), held = n => page.waitForFunction(n => window.__game.sim.p.hands.length === n, n, { timeout: 20000 });
-  const at = k => page.evaluate(k => { const g = window.__game, n = g.nodes[k]; return [n.x, g.rooms[n.rooms[0]].y + 0.3, n.z]; }, k);
+  const at = k => page.evaluate(k => { const g = window.__game, n = g.nodes[k]; return [n.x + n.at[0], g.rooms[n.rooms[0]].y + n.at[2] + 0.2, n.z + n.at[1]]; }, k); // where the thing on slot k is drawn
   await page.goto(LOCAL + '?debug&calm&seed=3'); await page.waitForFunction(() => window.__ready);
   await page.locator('#mula').tap({ force: true }); await page.waitForTimeout(1700);
   await touch(...await at(await G(() => window.__game.sim.items.find(i => i.d.wt === 3).node))); await held(1);
@@ -151,10 +153,11 @@ async function smoke() {
   assert.deepEqual(inPage, [1, 2, 3, 4, 5].map(s => [node.best(s).score, node.play(s, node.casual, 1).score]), 'bots score differently in the page');
   assert.equal(await G(() => window.__low), false, 'low-res guard fired on a fast machine');
   assert.deepEqual(errors, [], 'console or page errors');
-  // share.js fails to load: the run must still end with the score and a working Main Semula.
+  // share.js and models.bin fail to load: the run must play on the box models and still end with the score and a working Main Semula.
   const flaky = await ctx.newPage();
-  await flaky.route('**/share.js', r => r.abort());
-  await flaky.goto(LOCAL + '?debug&calm&seed=7'); await flaky.waitForFunction(() => window.__ready);
+  await flaky.route('**/share.js', r => r.abort()); await flaky.route('**/models.bin', r => r.abort());
+  await flaky.goto(LOCAL + '?debug&calm&seed=7'); await flaky.waitForFunction(() => window.__ready && window.__pack !== undefined);
+  assert.equal(await flaky.evaluate(() => window.__pack), false, 'a failed models.bin was reported as loaded');
   await flaky.locator('#mula').tap({ force: true }); await flaky.waitForTimeout(1700);
   await flaky.evaluate(() => { const g = window.__game; g.tap(g.sim, 'item', 'dokumen'); while (g.sim.t < 81.5) g.step(g.sim, 1 / 30); });
   await flaky.waitForFunction(() => !document.getElementById('end').hidden, null, { timeout: 15000 });

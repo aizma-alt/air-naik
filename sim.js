@@ -35,7 +35,7 @@ export function spawn(seed) {
   const rest = pool.filter(i => !chosen.includes(i)), count = 9 + Math.floor(r() * 2);
   while (chosen.length < count) chosen.push(pick(rest));
   const free = [...SLOTS], at = {};
-  const put = (i, rm) => { at[i.id] = pick(free.filter(k => !rm || NODES[k].rooms[0] === rm)); free.splice(free.indexOf(at[i.id]), 1); };
+  const put = (i, rm) => { at[i.id] = pick(free.filter(k => i.home ? k === i.home : !rm || NODES[k].rooms[0] === rm)); free.splice(free.indexOf(at[i.id]), 1); }; // home: the fridge and the TV have their own spot
   chosen.filter(i => i.decoy).forEach(i => put(i, i.room));
   const v = chosen.filter(valuable);
   put(pick(v), 'serambi'); put(pick(v), 'dapur');
@@ -83,7 +83,8 @@ export function title(s) {
 const canHold = (p, i) => i.d.wt === 3 ? !p.hands.length && !p.floating : p.hands.length < 2 && !p.hands.some(h => h.d.wt === 3);
 const used = (s, k) => s.items.some(i => (i.loc === 'slot' && i.node === k) || (i.loc === 'run' && i.dest === k)); // a running cat has its slot reserved
 const lose = i => i.id === 'kucing' ? 'slot' : 'gone'; // the cat is never swept: from a slot it runs for the roof by itself
-const wet = (s, k) => s.water > room(k).y + 0.15;
+const lift = k => Math.max(0.15, NODES[k].at[2]); // how far the water must rise above the floor to float what sits on slot k
+const wet = (s, k) => s.water > room(k).y + lift(k);
 function freeSlot(s, ok) { const c = SLOTS.filter(k => !used(s, k) && ok(k)); return c[Math.floor(s.rnd() * c.length)]; }
 function moveItem(s, i, to) { // the item changed slot: a player already heading for it follows
   i.node = to;
@@ -93,7 +94,7 @@ function moveItem(s, i, to) { // the item changed slot: a player already heading
 // Where an item on a slot sits: on the floor, or floating at the surface under the ceiling.
 export function itemPos(s, i) {
   const n = NODES[i.node], r = room(i.node);
-  return { x: n.x, z: n.z, y: Math.max(r.y, Math.min(s.water, TUNE.ceil[r.lvl] - 0.4)) };
+  return { x: n.x + n.at[0], z: n.z + n.at[1], y: Math.max(r.y + n.at[2], Math.min(s.water, TUNE.ceil[r.lvl] - 0.4)) }; // on its furniture, or floating
 }
 
 function floorY(p) {

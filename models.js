@@ -1,4 +1,5 @@
-// models.js: everything built from boxes and roof prisms. Geometry only, no game state, no asset files.
+// models.js: geometry only, no game state. Village, house and fallback models are built here from boxes and roof prisms;
+// furniture, people, cat and boat come from models.bin (Kenney, CC0, baked by tools/bake.mjs) once it has loaded.
 import * as THREE from 'three';
 import { ROOMS, NODES, DEPTH } from './data.js';
 
@@ -54,13 +55,27 @@ export function batch() {
     for (const [col2, f] of [[colour, [D, Cc, R1, R0]], [colour, [B, A, R0, R1]], [end, [A, D, R0]], [end, [Cc, B, R1]]]) face(col2, alongZ ? [...f].reverse() : f);
     return api;
   };
+  const put = (parts, x, y, z, ry = 0) => { // a baked model at a place, turned about y
+    const cs = Math.cos(ry), sn = Math.sin(ry);
+    for (const { p, g } of parts) {
+      const P = g.attributes.position, N = g.attributes.normal, K = g.attributes.color, base = pos.length / 3;
+      for (let i = 0; i < P.count; i++) {
+        const lx = P.getX(i) + p[0], lz = P.getZ(i) + p[2];
+        pos.push(x + lx * cs + lz * sn, y + P.getY(i) + p[1], z - lx * sn + lz * cs);
+        nor.push(N.getX(i) * cs + N.getZ(i) * sn, N.getY(i), -N.getX(i) * sn + N.getZ(i) * cs);
+        col.push(K.getX(i), K.getY(i), K.getZ(i));
+      }
+      for (const k of g.index.array) idx.push(base + k);
+    }
+    return api;
+  };
   const mesh = material => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx);
     return new THREE.Mesh(g, material);
   };
-  const api = { add, roof, mesh, all: list => { for (const s of list) add(...s); return api; } };
+  const api = { add, roof, put, mesh, all: list => { for (const s of list) add(...s); return api; } };
   return api;
 }
 
@@ -110,9 +125,10 @@ export function buildVillage() {
   return [b, lit];
 }
 
-// Main house. Returns batches: h stays in the cutaway, up = see-through upper floor, glow = lit windows inside, sh/glowOut = shell that fades at Mula.
+// Main house. Returns batches: h stays in the cutaway, f = plain stand-in furniture (hidden once models.bin arrives), up = see-through upper floor,
+// glow = lit windows inside, sh/glowOut = shell that fades at Mula.
 export function buildHouse() {
-  const h = batch(), up = batch(), sh = batch(), glow = batch(), glowOut = batch();
+  const h = batch(), f = batch(), up = batch(), sh = batch(), glow = batch(), glowOut = batch();
   for (const r of [S, R, K]) {
     for (let z = 0, i = 0; z < Z; z += 0.5, i++) h.add(i % 2 ? C.floor : C.floor2, r.x0, r.x1, r.y - 0.15, r.y, z, z + 0.5); // planks
     for (const x of [r.x0 + 0.15, r.x1 - 0.15]) for (const z of [0.15, Z - 0.15]) h.add(C.stilt, x - 0.1, x + 0.1, 0, r.y - 0.15, z - 0.1, z + 0.1);
@@ -134,20 +150,16 @@ export function buildHouse() {
   for (let y = B.y + 0.3; y < P.y + 0.3; y += 0.4) h.add(C.stilt, NODES.hb.x - 0.22, NODES.hb.x + 0.22, y, y + 0.06, NODES.hb.z - 0.44, NODES.hb.z - 0.38);
   h.add(C.stilt, P.x0, P.x1, P.y + 1.5, PERCH[1], Z / 2 - 0.08, Z / 2 + 0.08); // roof beam
   for (const x of [P.x0 + 0.08, P.x1 - 0.08]) h.add(C.stilt, x - 0.07, x + 0.07, P.y, P.y + 1.5, Z / 2 - 0.07, Z / 2 + 0.07);
-  for (const k in NODES) if (NODES[k].slot) { const n = NODES[k], y = ROOMS[n.rooms[0]].y; h.add(C.pad, n.x - 0.33, n.x + 0.33, y, y + 0.02, n.z - 0.33, n.z + 0.33); } // mats = places to put things
+  for (const k in NODES) if (NODES[k].slot) { const n = NODES[k], y = ROOMS[n.rooms[0]].y, x = n.x + n.at[0], z = n.z + n.at[1]; f.add(n.at[2] > 0.1 ? C.trim : C.pad, x - 0.3, x + 0.3, y, y + n.at[2], z - 0.28, z + 0.28); } // stand-ins: a crate or a mat under every slot
   // Furniture and decor, kept off the walking lines.
   h.add(0xc8553d, 3.3, 5.3, R.y, R.y + 0.015, 1.3, 2.9).add(0xf2d9a0, 3.45, 5.15, R.y + 0.015, R.y + 0.02, 1.45, 2.75); // Ruang Tamu rug
   for (const [x, y, w, hh, c] of [[2.85, 2.5, 0.5, 0.4, 0xf2c14e], [3.5, 2.75, 0.36, 0.5, 0xfafafa], [4.05, 3.1, 0.5, 0.36, 0xe4572e], [4.8, 3.45, 0.4, 0.4, 0xfafafa]]) h.add(C.trim, x - 0.04, x + w + 0.04, y - 0.04, y + hh + 0.04, 0, 0.03).add(c, x, x + w, y, y + hh, 0.03, 0.05); // frames going up the stairs
-  h.add(C.dark, 2.62, 2.7, R.y, R.y + 1.5, 0.2, 0.28).add(C.glow, 2.52, 2.8, R.y + 1.5, R.y + 1.78, 0.1, 0.38); // floor lamp
-  h.add(0xeadfc8, 6.85, 8.9, K.y, K.y + 0.72, 0.02, 0.32).add(C.trim, 6.85, 8.9, K.y + 0.72, K.y + 0.78, 0.0, 0.34); // kitchen counter
-  h.add(C.dark, 7.0, 7.5, K.y + 0.78, K.y + 0.82, 0.05, 0.3).add(0xcfd8dc, 8.2, 8.7, K.y + 0.78, K.y + 0.8, 0.06, 0.28).add(0xfafafa, 7.7, 7.95, K.y + 0.78, K.y + 1.02, 0.08, 0.28).add(C.dark, 7.76, 7.89, K.y + 1.02, K.y + 1.06, 0.12, 0.24); // stove, sink, rice cooker
   h.add(C.trim, 6.3, 7.3, K.y + 1.55, K.y + 1.6, 0, 0.26).add(0xfafafa, 6.4, 6.6, K.y + 1.6, K.y + 1.78, 0.05, 0.2).add(0x2a9d8f, 6.7, 6.86, K.y + 1.6, K.y + 1.85, 0.05, 0.2).add(0xf2c14e, 6.95, 7.15, K.y + 1.6, K.y + 1.74, 0.05, 0.2); // shelf with jars
   h.add(0x3d7ea6, 8.55, 8.9, K.y, K.y + 0.6, 1.25, 1.6).add(0xcfd8dc, 8.66, 8.79, K.y + 0.6, K.y + 0.72, 1.36, 1.49); // gas tank
   h.add(0x57a773, 6.7, 8.2, K.y, K.y + 0.015, 1.25, 2.1); // tikar
-  h.add(C.trim, 3.4, 4.3, B.y, B.y + 0.1, 1.9, 2.95).add(0xfafafa, 3.44, 4.26, B.y + 0.1, B.y + 0.22, 1.94, 2.91).add(0xf08a5d, 3.44, 4.26, B.y + 0.22, B.y + 0.25, 2.3, 2.91).add(0xfafafa, 3.55, 3.95, B.y + 0.22, B.y + 0.3, 1.98, 2.2); // tilam, blanket, pillow
-  h.add(C.trim, 5.68, 5.96, B.y, B.y + 0.62, 0.85, 1.22).add(C.glow, 5.74, 5.9, B.y + 0.62, B.y + 0.86, 0.95, 1.12); // bedside rack with lamp
+  h.add(C.trim, 3.5, 4.5, B.y, B.y + 0.1, 1.5, 2.75).add(0xfafafa, 3.54, 4.46, B.y + 0.1, B.y + 0.22, 1.54, 2.71).add(0xf08a5d, 3.54, 4.46, B.y + 0.22, B.y + 0.25, 2.05, 2.71).add(0xfafafa, 3.6, 3.86, B.y + 0.22, B.y + 0.3, 1.58, 1.96); // tilam on the floor, blanket, pillow
   for (const [x, y, w, hh, c] of [[3.0, 5.0, 0.44, 0.34, 0xf2c14e], [3.6, 5.05, 0.3, 0.42, 0x57a773]]) h.add(C.white, x - 0.04, x + w + 0.04, y - 0.04, y + hh + 0.04, 0, 0.03).add(c, x, x + w, y, y + hh, 0.03, 0.05);
-  for (const [x, z] of [[0.28, 0.3], [2.2, 0.28], [0.28, 2.7]]) h.add(0xc8553d, x - 0.16, x + 0.16, S.y, S.y + 0.26, z - 0.16, z + 0.16).add(C.leaf, x - 0.24, x + 0.24, S.y + 0.26, S.y + 0.62, z - 0.24, z + 0.24, 0, 0.5, 0).add(C.leaf2, x - 0.14, x + 0.14, S.y + 0.55, S.y + 0.85, z - 0.14, z + 0.14); // potted plants
+  for (const [x, z] of [[2.2, 0.28], [0.28, 2.8]]) f.add(0xc8553d, x - 0.16, x + 0.16, S.y, S.y + 0.26, z - 0.16, z + 0.16).add(C.leaf, x - 0.24, x + 0.24, S.y + 0.26, S.y + 0.62, z - 0.24, z + 0.24, 0, 0.5, 0).add(C.leaf2, x - 0.14, x + 0.14, S.y + 0.55, S.y + 0.85, z - 0.14, z + 0.14); // potted plants
   glow.add(C.glow, 4.5, 5.6, B.y + 0.8, B.y + 1.7, 0, 0.02).add(C.white, 4.42, 5.68, B.y + 0.72, B.y + 0.8, 0, 0.04).add(C.glow, 7.4, 8.5, K.y + 1.0, K.y + 1.75, 0, 0.02).add(C.white, 7.32, 8.58, K.y + 0.94, K.y + 1.0, 0, 0.04); // lit windows on the back walls
 
   // Shell: roofs and the walls facing the camera.
@@ -162,13 +174,46 @@ export function buildHouse() {
   sh.roof(C.roof, R.x0 - 0.5, R.x1 + 0.5, P.y, P.y + 1.75, -0.55, Z + 0.55, false, C.wall); // main gable over the Para
   for (const [x0, x1, y0, y1] of [[3.0, 4.1, R.y + 0.8, R.y + 1.7], [3.4, 5.1, B.y + 0.7, B.y + 1.6], [7.0, 8.0, K.y + 0.8, K.y + 1.6]]) { glowOut.add(C.glow, x0, x1, y0, y1, Z + 0.1, Z + 0.12); sh.add(C.white, x0 - 0.08, x1 + 0.08, y0 - 0.1, y0, Z + 0.1, Z + 0.16); }
   glowOut.add(C.glow, K.x1 + 0.1, K.x1 + 0.12, K.y + 0.8, K.y + 1.6, 1, 2).add(C.glow, R.x1 + 0.1, R.x1 + 0.12, B.y + 0.7, B.y + 1.6, 0.9, 2.1);
-  return { h, up, sh, glow, glowOut };
+  return { h, f, up, sh, glow, glowOut };
+}
+
+// Baked models (tools/bake.mjs): { name: [{ n, p: pivot, g: geometry relative to the pivot }] }. Throws if the file cannot load.
+export async function loadPack(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('models ' + r.status);
+  const buf = await r.arrayBuffer(), len = new DataView(buf).getUint32(0, true), head = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, len))), c = new THREE.Color(), pack = {};
+  let o = 4 + len;
+  for (const name in head) pack[name] = head[name].map(([n, px, py, pz, q, v, i]) => {
+    const P = new Int16Array(buf.slice(o, o += v * 6)), I = new Uint16Array(buf.slice(o, o += i * 2)), K = new Uint8Array(buf, o, v * 3), col = new Float32Array(v * 3), g = new THREE.BufferGeometry();
+    o += v * 3 + (v & 1);
+    for (let k = 0; k < v * 3; k += 3) { c.setRGB(K[k] / 255, K[k + 1] / 255, K[k + 2] / 255, THREE.SRGBColorSpace); col[k] = c.r; col[k + 1] = c.g; col[k + 2] = c.b; }
+    g.setAttribute('position', new THREE.Float32BufferAttribute(Float32Array.from(P, x => x * q), 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setIndex([...I]); g.computeVertexNormals(); g.computeBoundingBox();
+    return { n, p: [px, py, pz], g };
+  });
+  return pack;
+}
+
+// Furniture from the pack: [model, x, floor, z, turn]. Slot furniture stands where data.js puts the item (node + at).
+const T90 = Math.PI / 2;
+export function furnish(pack) {
+  const b = batch();
+  for (const [m, x, y, z, ry = 0] of [
+    ['benchCushion', 0.18, S.y, 0.7, T90], ['sideTable', 1.7, S.y, 0.2], ['cardboardBoxClosed', 0.32, S.y, 2.3], ['cardboardBoxOpen', 0.4, S.y, 1.72, 0.4], ['pottedPlant', 2.25, S.y, 0.25], ['pottedPlant', 0.25, S.y, 2.8],
+    ['cabinetTelevision', 2.74, R.y, 2.3, T90], ['sideTableDrawers', 3.9, R.y, 2.82], ['bookcaseOpenLow', 5.4, R.y, 2.82], ['lampRoundFloor', 5.82, R.y, 2.2], ['pottedPlant', 2.72, R.y, 1.0],
+    ['kitchenCabinetDrawer', 6.675, K.y, 0.335], ['kitchenStove', 7.325, K.y, 0.335], ['kitchenSink', 7.975, K.y, 0.335], ['kitchenCabinet', 8.625, K.y, 0.335], ['trashcan', 6.2, K.y, 0.3],
+    ['tableCloth', 7.0, K.y, 2.72], ['chairCushion', 6.12, K.y, 2.72, T90], ['chairCushion', 7.88, K.y, 2.72, -T90],
+    ['sideTableDrawers', 5.78, B.y, 1.4, -T90], ['lampRoundTable', 5.8, B.y + 0.58, 1.08], ['bookcaseOpenLow', 4.6, B.y, 2.8], ['cabinetBedDrawerTable', 5.78, B.y, 2.78], ['coatRackStanding', 5.82, B.y, 0.95], ['pottedPlant', 2.78, B.y, 2.8],
+    ['cardboardBoxClosed', 2.85, P.y, 0.35], ['cardboardBoxOpen', 2.9, P.y, 0.85, T90], ['cardboardBoxClosed', 2.86, P.y + 0.42, 0.36, 0.3],
+  ]) b.put(pack[m], x, y, z, ry);
+  return b;
 }
 
 // Pak cik in a T-shirt and kain pelikat. Body is one mesh; the arms are separate so they can swing.
 export const BODY = [[C.sarong, -.23, .23, 0, .5, -.16, .16], [C.sarong2, -.235, .235, .12, .2, -.165, .165], [C.sarong2, -.235, .235, .32, .4, -.165, .165], [C.skin, -.15, -.03, -.0, .04, -.05, .2], [C.skin, .03, .15, 0, .04, -.05, .2],
   [C.shirt, -.25, .25, .5, .98, -.17, .17], [C.skin, -.08, .08, .98, 1.02, -.08, .08], [C.skin, -.21, .21, 1.02, 1.42, -.2, .2], [C.hair, -.22, .22, 1.34, 1.47, -.21, .21], [C.hair, -.22, .22, 1.2, 1.36, -.21, -.12],
   [C.dark, -.12, -.06, 1.2, 1.27, .2, .21], [C.dark, .06, .12, 1.2, 1.27, .2, .21], [0xb5651d, -.06, .06, 1.09, 1.12, .2, .21]];
+export const SARONG = [[C.sarong, -.34, .34, .08, .44, -.36, .24], [C.sarong2, -.345, .345, .15, .21, -.365, .245], [C.sarong2, -.345, .345, .3, .36, -.365, .245]]; // kain pelikat over the baked man's legs
 export const ARM = (c = C.shirt) => [[c, -.06, .06, -.2, 0, -.07, .07], [C.skin, -.055, .055, -.42, -.2, -.065, .065]]; // hangs from the shoulder at y 0
 export const NEIGHBOUR = [[C.pants, -.21, .21, 0, .45, -.15, .15], [C.coat, -.26, .26, .4, .98, -.18, .18], [C.skin, -.21, .21, 1.02, 1.42, -.2, .2], [C.coat, -.24, .24, 1.3, 1.5, -.23, .22], [C.coat, -.24, .24, 1.0, 1.36, -.23, -.14],
   [C.dark, -.12, -.06, 1.2, 1.27, .2, .21], [C.dark, .06, .12, 1.2, 1.27, .2, .21], [C.coat, -.38, -.26, .5, .92, -.07, .07]];

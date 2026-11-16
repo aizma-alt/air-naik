@@ -12,8 +12,8 @@ export const ITEMS = [
   { id: 'makanan', name: 'Makanan Tin', icon: '🥫', wt: 2, nilai: 4, c: 0xc1121f },
   { id: 'pakaian', name: 'Pakaian & Selimut', icon: '🧺', wt: 2, nilai: 4, c: 0xb5838d },
   { id: 'kucing', name: 'Kucing (Comot)', icon: '🐈', wt: 1, nilai: 9, c: 0xf28f3b },
-  { id: 'peti', name: 'Peti Sejuk', icon: '🧊', wt: 3, nilai: 2, decoy: true, room: 'dapur', c: 0xdfe7ea },
-  { id: 'tv', name: 'TV', icon: '📺', wt: 3, nilai: 2, decoy: true, room: 'tamu', c: 0x2b2d42 },
+  { id: 'peti', name: 'Peti Sejuk', icon: '🧊', wt: 3, nilai: 2, decoy: true, room: 'dapur', home: 'k3', c: 0xdfe7ea },
+  { id: 'tv', name: 'TV', icon: '📺', wt: 3, nilai: 2, decoy: true, room: 'tamu', home: 't1', c: 0x2b2d42 },
 ];
 
 // Ground floor rooms sit side by side along x at different floor heights, so they flood in order.
@@ -27,13 +27,14 @@ export const ROOMS = {
 };
 
 // Waypoints. Nodes in the same room connect directly (rooms are open rectangles).
-// slot: an anchor that can hold one item. Doors belong to two rooms.
-const n = (rooms, x, z, slot) => ({ rooms: [].concat(rooms), x, z, slot: !!slot });
+// slot: an anchor that can hold one item. at = [dx, dz, lift]: the item sits on furniture beside the walking spot, lift above the floor.
+// The water must pass the lift before the item floats, so high spots stay put longer. Doors belong to two rooms.
+const n = (rooms, x, z, at) => ({ rooms: [].concat(rooms), x, z, slot: !!at, at });
 export const NODES = {
-  s1: n('serambi', 0.6, 0.7, 1), s2: n('serambi', 1.7, 0.6, 1), s3: n('serambi', 0.8, 2.3, 1),
-  t1: n('tamu', 3.1, 1.9, 1), t2: n('tamu', 3.9, 2.6, 1), t3: n('tamu', 4.8, 1.8, 1), t4: n('tamu', 5.4, 2.6, 1),
-  k1: n('dapur', 6.7, 0.6, 1), k2: n('dapur', 8.3, 0.7, 1), k3: n('dapur', 8.3, 2.3, 1), k4: n('dapur', 7.0, 2.4, 1),
-  b1: n('bilik', 4.0, 1.5, 1), b2: n('bilik', 5.3, 1.4, 1), b3: n('bilik', 4.6, 2.5, 1), b4: n('bilik', 5.5, 2.5, 1),
+  s1: n('serambi', 0.6, 0.7, [-0.42, 0, 0.33]), s2: n('serambi', 1.7, 0.6, [0, -0.4, 0.58]), s3: n('serambi', 0.8, 2.3, [-0.48, 0, 0.42]), // bench, side table, box
+  t1: n('tamu', 3.1, 1.9, [-0.35, 0.3, 0.47]), t2: n('tamu', 3.9, 2.6, [0, 0.22, 0.58]), t3: n('tamu', 4.8, 1.8, [0, 0.3, 0.03]), t4: n('tamu', 5.4, 2.6, [0, 0.22, 0.6]), // TV cabinet, drawers, tikar, bookcase
+  k1: n('dapur', 6.7, 0.95, [0, -0.62, 0.67]), k2: n('dapur', 8.3, 0.95, [0.25, -0.62, 0.67]), k3: n('dapur', 8.3, 2.3, [0.3, 0.2, 0.03]), k4: n('dapur', 7.0, 2.4, [0, 0.32, 0.49]), // counters, floor by the wall, table
+  b1: n('bilik', 4.0, 1.5, [0, 0.3, 0.25]), b2: n('bilik', 5.3, 1.4, [0.48, 0, 0.58]), b3: n('bilik', 4.6, 2.5, [0, 0.3, 0.6]), b4: n('bilik', 5.5, 2.5, [0.28, 0.28, 0.39]), // tilam, drawers, bookcase, bedside table
   home: n('tamu', 4.3, 1.3),
   d1: n(['serambi', 'tamu'], 2.5, 1.5), d2: n(['tamu', 'dapur'], 6, 1.5),
   sb: n('tamu', 5.6, 0.45), st: n('bilik', 3.0, 0.45), // stairs, bottom and top

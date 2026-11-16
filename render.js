@@ -2,15 +2,16 @@
 import * as THREE from 'three';
 import { ROOMS, NODES, DEPTH, BOAT as DOCK, CAM } from './data.js';
 import { itemPos } from './sim.js';
-import { C, SHAPES, PERCH, batch, buildVillage, buildHouse, BODY, ARM, NEIGHBOUR, BOAT } from './models.js';
+import { C, SHAPES, PERCH, batch, buildVillage, buildHouse, BODY, ARM, SARONG, NEIGHBOUR, BOAT, loadPack, furnish } from './models.js';
 
 const { para: P } = ROOMS, Z = DEPTH, Y = new THREE.Vector3(0, 1, 0);
 const HOUSE = new THREE.Vector3(4.5, 3.7, 1.5), VILLAGE = new THREE.Vector3(4.5, 2.0, 3.2); // camera targets: game, landing
+const PACKED = { kucing: 'cat', peti: 'peti', tv: 'tv', radio: 'radio' }; // items that have a baked model
 
 export function createView(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); // opaque: the ground fills the view
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); // phone dpr is 3.25
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x1d3344);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x8fb37a, 1.9));
@@ -31,7 +32,8 @@ export function createView(canvas) {
   const deck = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: C.deck, transparent: true, opacity: 0.85, depthWrite: false })); // own mesh: pulses for the second hint
   deck.scale.set(P.x1 - P.x0, 0.15, Z); deck.position.set((P.x0 + P.x1) / 2, P.y - 0.075, Z / 2); deck.receiveShadow = true;
   shell.add(shade(hb.sh.mesh(shellMat)), hb.glowOut.mesh(shellLit));
-  scene.add(shade(vb.mesh(solid)), vlit.mesh(lit), shade(hb.h.mesh(solid)), shade(hb.up.mesh(glass), false), hb.glow.mesh(lit), deck, shell);
+  const standIn = shade(hb.f.mesh(solid));
+  scene.add(shade(vb.mesh(solid)), vlit.mesh(lit), shade(hb.h.mesh(solid)), standIn, shade(hb.up.mesh(glass), false), hb.glow.mesh(lit), deck, shell);
 
   const water = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), new THREE.MeshBasicMaterial({ color: C.water, transparent: true, opacity: 0.8, depthWrite: false }));
   water.rotation.x = -Math.PI / 2; water.position.set(5, 0, 5); scene.add(water);
@@ -46,14 +48,41 @@ export function createView(canvas) {
     new THREE.LineBasicMaterial({ color: C.rain, transparent: true, opacity: 0.35, depthWrite: false }));
   rain.frustumCulled = false; scene.add(rain);
 
+  // Fallback people and boat, built from boxes. upgrade() swaps in the baked models when models.bin arrives.
   const man = new THREE.Group(); scene.add(man);
-  man.add(shade(batch().all(BODY).mesh(solid)));
-  const arms = [-1, 1].map(side => { const a = shade(batch().all(ARM()).mesh(solid)); a.position.set(side * 0.31, 0.95, 0); man.add(a); return a; });
+  let body = shade(batch().all(BODY).mesh(solid)), legs = [], head = null, rest = 0, waveUp = Math.PI, deckY = 0.08, pack = null; // rest: how far the arms must drop to hang down
+  let arms = [-1, 1].map(side => { const a = shade(batch().all(ARM()).mesh(solid)); a.position.set(side * 0.31, 0.95, 0); return a; });
+  man.add(body, ...arms);
   const jacket = new THREE.Mesh(deck.geometry, new THREE.MeshLambertMaterial({ color: C.jacket })); jacket.scale.set(0.58, 0.44, 0.42); jacket.position.y = 0.74; man.add(jacket);
   const boat = new THREE.Group(); scene.add(boat);
-  const jiran = shade(batch().all(NEIGHBOUR).mesh(solid)); jiran.position.set(-0.7, 0.08, 0); jiran.rotation.y = Math.PI / 2;
-  const wave = shade(batch().all(ARM(C.coat)).mesh(solid)); wave.position.set(-0.7, 1.03, -0.32); // the jiran's waving arm
-  boat.add(shade(batch().all(BOAT).mesh(solid)), jiran, wave);
+  let jiran = shade(batch().all(NEIGHBOUR).mesh(solid)); jiran.position.set(-0.7, 0.08, 0); jiran.rotation.y = Math.PI / 2;
+  let wave = shade(batch().all(ARM(C.coat)).mesh(solid)); wave.position.set(-0.7, 1.03, -0.32); // the jiran's waving arm
+  let hull = shade(batch().all(BOAT).mesh(solid));
+  boat.add(hull, jiran, wave);
+
+  // A baked model as a group: one mesh per moving part, each at its pivot. Returns [group, parts by name, top height].
+  function rig(parts) {
+    const g = new THREE.Group(), by = {};
+    let top = 0;
+    for (const q of parts) { const m = shade(new THREE.Mesh(q.g, solid)); m.position.set(...q.p); g.add(m); by[q.n] = m; top = Math.max(top, q.p[1] + q.g.boundingBox.max.y); }
+    return [g, by, top];
+  }
+  const droop = m => { const c = m.geometry.boundingBox.getCenter(v); return Math.atan2(Math.abs(c.x), -c.y); }; // angle of a baked arm from straight down
+  function upgrade(pk) {
+    pack = pk;
+    standIn.visible = false; scene.add(shade(furnish(pk).mesh(solid)));
+    man.remove(body, ...arms);
+    let by, top; [body, by, top] = rig(pk.man); body.add(shade(batch().all(SARONG).mesh(solid))); man.add(body);
+    arms = [by['arm-right'], by['arm-left']]; legs = [by['leg-right'], by['leg-left']]; head = by.head; rest = droop(arms[0]) - 0.15;
+    const tb = by.torso.geometry.boundingBox; // life jacket hugs the torso
+    jacket.scale.set((tb.max.x - tb.min.x) * 1.12, (tb.max.y - tb.min.y) * 0.9, (tb.max.z - tb.min.z) * 1.15); jacket.position.set(by.torso.position.x + (tb.max.x + tb.min.x) / 2, by.torso.position.y + (tb.max.y + tb.min.y) / 2, by.torso.position.z + (tb.max.z + tb.min.z) / 2);
+    boat.remove(hull, jiran, wave);
+    hull = rig(pk.boat)[0]; hull.position.y = -0.2; deckY = -0.02;
+    [jiran, by] = rig(pk.jiran); jiran.position.set(-0.75, deckY - 0.1, 0); jiran.rotation.y = Math.PI / 2; jiran.scale.setScalar(0.92);
+    wave = by['arm-right']; waveUp = -(2.5 - droop(wave));
+    boat.add(hull, jiran);
+    if (sim) for (const i of sim.items) dress(meshes.get(i.id), i);
+  }
   const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.62, 4), new THREE.MeshBasicMaterial({ color: C.arrow, depthTest: false, transparent: true })); arrow.rotation.x = Math.PI; arrow.renderOrder = 9; scene.add(arrow); // hint pointer, always on top
 
   const stickers = {};
@@ -70,14 +99,21 @@ export function createView(canvas) {
   const yawR = CAM.yaw * Math.PI / 180, RX = Math.cos(yawR), RZ = -Math.sin(yawR); // screen right, in world x and z
   boat.rotation.y = yawR;
   let leave = 0, sim, meshes = new Map(), time = 0, mode = 'land', yaw = yawR, yaw0 = 0, cut = 1, lastX = 0, lastZ = 0, face = 0, width = CAM.far;
+  function dress(g, i) { // (re)builds an item's model: baked if the pack has it, boxes if not. Keeps its place and state.
+    const u = g.userData, parts = pack && pack[PACKED[i.id]], shape = SHAPES[i.id];
+    if (u.body) { g.remove(u.body); if (u.own) u.body.geometry.dispose(); }
+    u.own = !parts; u.rig = null;
+    if (parts) { [u.body, u.rig, u.h] = rig(parts); if (i.id === 'kucing') u.body.rotation.y = Math.PI / 2; } // the cat model looks along z, the game turns it nose first along x
+    else { u.body = shade(batch().all(shape).mesh(solid)); u.h = Math.max(...shape.map(b => b[4])); }
+    g.add(u.body); u.sp.position.y = u.h + 0.42;
+  }
   function setSim(s) {
-    for (const m of meshes.values()) { scene.remove(m); m.children[0].geometry.dispose(); }
+    for (const m of meshes.values()) { scene.remove(m); if (m.userData.own) m.userData.body.geometry.dispose(); }
     meshes = new Map(); sim = s; leave = 0;
     for (const i of s.items) {
-      const g = new THREE.Group(), shape = SHAPES[i.id], top = Math.max(...shape.map(b => b[4]));
-      g.add(shade(batch().all(shape).mesh(solid)));
-      const sp = new THREE.Sprite(sticker(i.d.icon)); sp.scale.setScalar(i.d.wt === 3 ? 0.8 : 0.62); sp.position.y = top + 0.42; g.add(sp);
-      g.userData = { h: top, gone: 0, snap: true }; scene.add(g); meshes.set(i.id, g);
+      const g = new THREE.Group(), sp = new THREE.Sprite(sticker(i.d.icon));
+      sp.scale.setScalar(i.d.wt === 3 ? 0.8 : 0.62); g.add(sp);
+      g.userData = { sp, gone: 0, snap: true }; dress(g, i); scene.add(g); meshes.set(i.id, g);
     }
   }
 
@@ -120,17 +156,20 @@ export function createView(canvas) {
       const along = b.state === 'arriving' ? -DOCK.from * (1 - b.k) ** 1.6 : leave * leave * DOCK.accel; // tiles toward screen right
       boat.position.set(DOCK.x + along * RX, sim.water + 0.2 + Math.sin(time * 2.2) * 0.04, DOCK.z + along * RZ);
       boat.rotation.z = Math.sin(time * 1.7) * 0.03; boat.updateMatrixWorld();
-      wave.rotation.x = Math.PI + Math.sin(time * 9) * 0.5; // the jiran waves
+      if (pack) wave.rotation.z = waveUp + Math.sin(time * 9) * 0.35; else wave.rotation.x = waveUp + Math.sin(time * 9) * 0.5; // the jiran waves
       const moved = Math.hypot(p.x - lastX, p.z - lastZ) > 1e-4, heavy = p.hands[0] && p.hands[0].d.wt === 3;
       if (moved) face = Math.atan2(p.x - lastX, p.z - lastZ); // turn to where he walks
       lastX = p.x; lastZ = p.z;
-      if (p.aboard) { boat.localToWorld(man.position.set(0.25, 0.08, 0)); man.rotation.y = yawR + Math.PI / 2; }
+      if (p.aboard) { boat.localToWorld(man.position.set(0.25, deckY, 0)); man.rotation.y = yawR + Math.PI / 2; }
       else { man.position.set(p.x, p.y + (moved && !p.floating ? Math.abs(Math.sin(time * 12)) * 0.07 : p.floating ? Math.sin(time * 3) * 0.05 : 0), p.z); man.rotation.y = face; }
       arms.forEach((a, k) => { // carry pose, swim, or walking swing
         const holding = heavy || p.hands[k];
         a.rotation.x = heavy ? -2.9 : holding ? -1.25 : p.floating ? -1.4 + Math.sin(time * 5 + k * 3) * 0.5 : moved ? Math.sin(time * 12 + k * Math.PI) * 0.7 : 0;
-        a.rotation.z = p.floating && !holding ? (k ? 0.5 : -0.5) : 0;
+        a.rotation.z = (k ? 1 : -1) * ((p.floating && !holding ? 0.5 : 0) - rest);
       });
+      const walk = moved && !p.floating && !p.aboard;
+      legs.forEach((l, k) => { l.rotation.x = walk ? Math.sin(time * 12 + k * Math.PI) * 0.7 : p.floating ? Math.sin(time * 5 + k * Math.PI) * 0.4 : 0; }); // step, or kick in the water
+      if (head) head.rotation.z = walk ? Math.sin(time * 12) * 0.05 : 0;
       jacket.visible = p.jacket;
       deck.material.emissive.setScalar(hint === 'para' ? 0.35 * pulse : 0);
       if (hint === 'para') { arrow.visible = true; arrow.position.set(4.6, P.y + 1.1 + pulse * 0.3, 2.3); }
@@ -139,7 +178,7 @@ export function createView(canvas) {
         const g = meshes.get(i.id), u = g.userData;
         g.scale.setScalar(1);
         if (i.loc === 'slot') {
-          const q = itemPos(sim, i), afloat = q.y > ROOMS[NODES[i.node].rooms[0]].y;
+          const q = itemPos(sim, i), afloat = q.y > ROOMS[NODES[i.node].rooms[0]].y + NODES[i.node].at[2];
           v.set(q.x, q.y + (afloat ? Math.sin(time * 2 + q.x) * 0.05 - Math.min(u.h * 0.4, 0.3) : 0), q.z);
           g.position.lerp(v, u.snap ? 1 : Math.min(1, dt * 5)); u.snap = false; // glides when it drifts
           g.rotation.set(0, afloat ? Math.sin(time * 0.7 + q.z) * 0.4 : 0, afloat ? Math.sin(time * 1.6 + q.x) * 0.08 : 0);
@@ -149,16 +188,21 @@ export function createView(canvas) {
           g.position.copy(man.position).add((i.d.wt === 3 ? v.set(0, 1.5, 0.05) : v.set(k ? 0.31 : -0.31, 0.62, 0.42)).applyAxisAngle(Y, man.rotation.y));
           g.rotation.set(0, man.rotation.y, 0);
         } else if (i.loc === 'para' && !p.aboard) { g.position.set(3.5 + (np % 5) * 0.55, P.y, 0.4 + Math.floor(np / 5) * 0.6); g.rotation.set(0, 0, 0); np++; }
-        else if (i.loc === 'boat' || i.loc === 'para') { boat.localToWorld(g.position.set(0.55 + (nb % 2) * 0.4 - Math.floor(nb / 4) * 0.4, 0.08, (Math.floor(nb / 2) % 2 - 0.5) * 0.45)); nb++; } // what he saved goes with him
+        else if (i.loc === 'boat' || i.loc === 'para') { boat.localToWorld(g.position.set(0.55 + (nb % 2) * 0.4 - Math.floor(nb / 4) * 0.4, deckY, (Math.floor(nb / 2) % 2 - 0.5) * 0.45)); nb++; } // what he saved goes with him
         else if (i.loc === 'run') { // the cat on its way: hops along, nose first
           if (Math.hypot(i.x - g.position.x, i.z - g.position.z) > 1e-3) g.rotation.set(0, Math.atan2(g.position.z - i.z, i.x - g.position.x), 0);
           g.position.set(i.x, i.y + Math.abs(Math.sin(time * 16)) * 0.12, i.z);
         } else if (i.loc === 'perch') { g.position.lerp(v.set(...PERCH), Math.min(1, dt * 5)); g.rotation.set(0, 0, 0); }
-        else if (i.loc === 'ikut') boat.localToWorld(g.position.set(-0.15, 0.08, 0.25));
+        else if (i.loc === 'ikut') boat.localToWorld(g.position.set(-0.15, deckY, 0.25));
         else { // gone: drifts off and shrinks
           u.gone = Math.min(1, u.gone + dt / 2.5);
           g.position.x += dt * 1.6 * RX; g.position.z += dt * 1.6 * RZ; g.position.y = sim.water - 0.2;
           g.scale.setScalar(1 - u.gone);
+        }
+        if (u.rig && i.id === 'kucing') { // paws when it runs, tail always
+          const run = i.loc === 'run' ? Math.sin(time * 22) * 0.8 : 0;
+          for (const n in u.rig) if (n.startsWith('leg')) u.rig[n].rotation.x = n.includes('front') ? run : -run;
+          u.rig.tail.rotation.z = Math.sin(time * 5) * 0.25;
         }
         g.visible = !(i.loc === 'gone' && u.gone >= 1);
       }
@@ -178,7 +222,7 @@ export function createView(canvas) {
       near(g.position.x, g.position.y + g.userData.h / 2 + 0.2, g.position.z, i.d.wt === 3 ? 1 : 0.75, { kind: 'item', id: i.id });
       if (i.loc === 'slot') used[i.node] = 1;
     }
-    for (const k in NODES) if (NODES[k].slot && !used[k]) near(NODES[k].x, ROOMS[NODES[k].rooms[0]].y, NODES[k].z, 0.6, { kind: 'slot', id: k });
+    for (const k in NODES) if (NODES[k].slot && !used[k]) { const n = NODES[k]; near(n.x + n.at[0], ROOMS[n.rooms[0]].y + n.at[2], n.z + n.at[1], 0.6, { kind: 'slot', id: k }); }
     if (sim.boat.state === 'docked') near(boat.position.x, boat.position.y + 0.2, boat.position.z, 1.3, { kind: 'boat' });
     if (best) return best;
     ndc.set((cx - r.left) / r.width * 2 - 1, -(cy - r.top) / r.height * 2 + 1);
@@ -192,5 +236,8 @@ export function createView(canvas) {
     const r = canvas.getBoundingClientRect(); v.set(x, y, z).project(cam);
     return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
   }
-  return { setSim, begin, frame, pick, resize, quality, toScreen, boatAt: () => toScreen(boat.position.x, boat.position.y, boat.position.z), info: () => renderer.info.render };
+  // Fetches the baked models and swaps them in. Resolves false if they cannot load: the box models stay.
+  const models = url => loadPack(url).then(pk => { upgrade(pk); return true; }, () => false);
+  const look = (x, y, z, w) => { HOUSE.set(x, y, z); width = w; frustum(); }; // art checks only: close-up on a spot
+  return { setSim, begin, frame, pick, resize, quality, toScreen, models, look, boatAt: () => toScreen(boat.position.x, boat.position.y, boat.position.z), info: () => renderer.info.render };
 }
