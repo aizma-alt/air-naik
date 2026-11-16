@@ -73,7 +73,8 @@ export const TUNE = {
 // Messages: [earliest, latest, kind]. One hoax in Amaran, a burst in Bahaya. None after the sweep at 62s.
 export const PINGS = [[13, 22, 'chat'], [32, 42, 'hoax'], [45, 50, 'chat'], [55.5, 56.5, 'chat'], [58, 59, 'chat'], [60.5, 61.5, 'chat']];
 
-export const CAM = { yaw: 45, pitch: 30, view: 10.5, orbit: 0.25, cut: 1.5 };
+// view: tiles across the screen in play. far: the same on the landing (the village). sway: yaw swing on the landing, radians. cut: seconds of zoom at Mula.
+export const CAM = { yaw: 45, pitch: 30, view: 10.5, far: 27, sway: 0.22, cut: 1.8 };
 
 export const BM = {
   levels: ['Normal', 'Waspada', 'Amaran', 'Bahaya'],
