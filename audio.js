@@ -88,9 +88,12 @@ export function createAudio() {
         const r = await fetch(dir + file); if (!r.ok) throw 0;
         const b = await ctx.decodeAudioData(await r.arrayBuffer()); if (!b) throw 0;
         buf[name] = b;
-        if (BEDS[name]) { // loop inside the file: a cut MP3 has a rough first frame and padding at the end
-          const s = ctx.createBufferSource(), g = beds[name] = ctx.createGain();
-          s.buffer = b; s.loop = true; s.loopStart = 0.15; s.loopEnd = b.duration - 0.15; g.gain.value = 0.0001; s.connect(g).connect(out); s.start(0, 0.15); api.level(level);
+        if (BEDS[name]) {
+          const s = ctx.createBufferSource(), g = beds[name] = ctx.createGain(), d = b.getChannelData(0), sr = b.sampleRate;
+          const zero = i => { while (i < d.length - 2 && !(d[i] <= 0 && d[i + 1] > 0)) i++; return i / sr; }; // next upward zero crossing: a loop joined there does not click
+          s.buffer = b; s.loop = true; g.gain.value = 0.0001;
+          if (file.endsWith('.mp3')) { s.loopStart = zero(0.15 * sr | 0); s.loopEnd = zero((b.duration - 0.3) * sr | 0); } // a cut MP3 has a rough first frame and padding at the end, so loop inside it; the OGG loops whole
+          s.connect(g).connect(out); s.start(0, s.loopStart); api.level(level);
         }
       } catch { /* this one stays synthesized */ }
     })).then(() => Object.keys(buf).length),
