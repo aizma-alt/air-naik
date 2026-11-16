@@ -32,7 +32,7 @@ Tests: npm test (rules, 200 seeds) Â· node test/balance.mjs (bots, pass lines) Â
 - Kongsi: Web Share with the PNG if allowed, else link only, else Salin pautan + Simpan gambar (<a download>) + long-press on the card image. If share.js cannot load, the end screen shows the plain score and Main Semula.
 
 ## Measurements
-- Load (Slow 4G, cold, median of 5), local gzip server, with Kenney models: 2248ms, 2605ms with 4x CPU, 171KB before Mula (models.bin comes after). Pass. Three.js self hosted and tree-shaken (the CDN min build pulls the unminified core).
+- Load (Slow 4G, cold, median of 5), live site, with Kenney models: 2304ms, 2699ms with 4x CPU, 171KB before Mula (models.bin comes after, served gzipped, loads with no errors). Pass. Three.js self hosted and tree-shaken (the CDN min build pulls the unminified core).
 - Slow-phone guard: 65% resolution and no shadows if frames 20 to 140 average under 40 fps (tested by forcing 25 fps). Shadows are new: phone FPS must be re-checked. Not handled: WebGL context loss.
 - Balance, 100 seeds: zero taps 0 (clock never starts); minimal effort (one tap on Dokumen) 10 in 100%; casual bot 54% of nilai; best bot (24 plans, 0.25s reaction) 84%, saves every item 0%, every non-decoy 7%; clears every non-decoy at 2.5x speed.
 - Sources (2026-11-16): 10 kit items and the tip match the DOSM-hosted article; alert words match the flood portal legend; Ready2go link is 404 (UNVERIFIED); "bersedia berpindah" has a news report only.
