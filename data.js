@@ -51,10 +51,10 @@ export const T = { levels: [0, 10, 30, 55], drift: 62, max: 70, boatIn: 6, boat:
 export const WATER = [[0, -0.25], [10, 0], [22, 1.0], [34, 1.3], [44, 1.6], [50, 2.6], [58, 4.0], [70, 6.05]];
 
 export const TUNE = {
-  speed: 2.0, // tiles per second, empty hands, dry floor
+  speed: 2.6, // tiles per second, empty hands, dry floor
   wt: [1, 0.75, 0.5], // speed by heaviest held weight 1/2/3
-  grab: [0.5, 0.8, 1.3], // seconds to pick up, by weight
-  climb: 0.4, // speed x on the stairs and the ladder (not while the water carries him)
+  grab: [0.25, 0.4, 0.65], // seconds to pick up, by weight
+  climb: 0.2, climbFree: 0.6, // speed x on the stairs and the ladder: carrying, empty-handed (not while the water carries him)
   wade: [[0.4, 0.85], [1.0, 0.7]], // [depth below which, speed x]: to knee, knee to chest
   float: 0.5, // speed x when floating
   chest: 1.0, neck: 1.2, height: 1.4, // floating starts at chest depth; feet sit at water minus neck
@@ -63,6 +63,7 @@ export const TUNE = {
   lift: 2.5, // speed while being carried up
   valuable: 5, // nilai at or above this counts as valuable for spawn guarantees
   // Chaos
+  catSpeed: 3.4, // the cat runs the real route (doors, stairs, ladder) when it bolts or flees the water
   flee2: 0.5, // the cat always bolts once when he reaches for it; chance it bolts a second time
   drift: [4, 5], // a floating item moves to another slot every 4 to 9s
   pingTtl: 4, // a message closes by itself after this long; while open it blocks taps on the house
@@ -79,19 +80,19 @@ export const BM = {
   tag: 'bersedia berpindah',
   hint1: 'Klik barang', hint2: 'Klik tempat tinggi',
   heavy: 'Terlalu berat!', full: 'Tangan penuh!', deep: 'Air dah tinggi sangat!',
-  lift: 'Air naik, terapung ke atas!', boat: 'Bot sampai!', move: 'Masa pindah!',
-  jacket: 'Pakai jaket', pps: 'Menuju PPS', fail: 'Tak dapat muat permainan. Cuba muat semula.',
-  cat: 'Comot lari!', catUp: 'Comot panjat bumbung!',
+  lift: 'Air dah tinggi, naik atas!', boat: 'Bot sampai!', move: 'Masa pindah!',
+  jacket: 'Pakai jaket', pps: 'Menuju PPS', fail: 'Game tak boleh load. Cuba refresh.',
+  cat: 'Comot lari!', catRun: 'Comot tengah lari!', catUp: 'Comot panjat bumbung!',
   // Result card. tip is the one sourced safety line (source in docs/item-sheet.md, never named in the game).
-  titles: { awal: 'Beg Siap Awal', dokumen: 'Jaguh Dokumen', comot: 'Sayang Comot', peti: 'Hero Peti Sejuk', tabah: 'Tabah Sampai Akhir' },
+  titles: { awal: 'Beg Siap Awal', dokumen: 'Dokumen Penting', comot: 'Sayang Comot', peti: 'Hero Peti Sejuk', tabah: 'Tabah Sampai Akhir' },
   highest: 'Aras tertinggi', saved: 'Barang selamat', catSafe: 'Comot pun selamat, ikut naik bot.',
-  tip: 'Kalau diarah berpindah, pindah segera. Jangan tunggu air naik.',
+  tip: 'Kalau diarah pindah, terus pindah. Jangan tunggu air naik.',
   warm1: 'Barang boleh diganti.', warm2: 'Yang penting, kita semua selamat.',
   footer: 'Projek kreatif, bukan produk rasmi.', tagline: 'Hujan tak berhenti. Selamatkan apa yang boleh.',
   shareText: 'Aku dapat skor {n} dalam Air Naik! Kau boleh selamatkan berapa?',
-  salinOk: 'Pautan disalin!', saveHint: 'Tekan lama gambar untuk simpan, atau tangkap skrin.',
+  salinOk: 'Link dah disalin!', saveHint: 'Tekan lama gambar untuk save, atau screenshot je.',
   pingTitle: 'Mesej baru', ok: 'OK', sebarBtn: 'Sebarkan', semakBtn: 'Semak sumber rasmi',
   sebar: 'Sibuk forward mesej...', semak: 'Bijak. Semak dulu.',
-  hoax: 'Dimajukan banyak kali: "Air akan naik 10 kaki malam ni!! Sebarkan!!"',
-  chats: ['Hujan lebat lagi ke kat sana?', 'Dah makan belum?', 'Jaga diri ya!', 'Bateri telefon cukup tak?', 'Air dah naik ke?', 'Apa-apa roger tau.'],
+  hoax: 'Dimajukan berkali-kali: "Air akan naik 10 kaki malam ni!! Sebarkan!!"',
+  chats: ['Hujan lebat lagi ke kat sana?', 'Dah makan ke belum?', 'Jaga diri tau!', 'Bateri phone cukup tak?', 'Air dah naik ke?', 'Apa-apa roger tau.'],
 };

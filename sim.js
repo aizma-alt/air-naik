@@ -40,7 +40,7 @@ export function spawn(seed) {
   const v = chosen.filter(valuable);
   put(pick(v), 'serambi'); put(pick(v), 'dapur');
   chosen.filter(i => !at[i.id]).forEach(i => put(i));
-  // loc: slot, hand, para, boat, gone (swept away). The cat is never swept: perch (roof beam), then ikut (rides along, no score).
+  // loc: slot, hand, para, boat, gone (swept away). Cat only: run (on its way, x y z are live), perch (roof beam), ikut (rides along, no score).
   return chosen.map(d => ({ id: d.id, d, node: at[d.id], loc: 'slot' }));
 }
 
@@ -81,8 +81,8 @@ export function title(s) {
   return 'tabah';
 }
 const canHold = (p, i) => i.d.wt === 3 ? !p.hands.length && !p.floating : p.hands.length < 2 && !p.hands.some(h => h.d.wt === 3);
-const used = (s, k) => s.items.some(i => i.loc === 'slot' && i.node === k);
-const lose = i => i.id === 'kucing' ? 'perch' : 'gone';
+const used = (s, k) => s.items.some(i => (i.loc === 'slot' && i.node === k) || (i.loc === 'run' && i.dest === k)); // a running cat has its slot reserved
+const lose = i => i.id === 'kucing' ? 'slot' : 'gone'; // the cat is never swept: from a slot it runs for the roof by itself
 const wet = (s, k) => s.water > room(k).y + 0.15;
 function freeSlot(s, ok) { const c = SLOTS.filter(k => !used(s, k) && ok(k)); return c[Math.floor(s.rnd() * c.length)]; }
 function moveItem(s, i, to) { // the item changed slot: a player already heading for it follows
@@ -132,6 +132,7 @@ export function tap(s, kind, id) {
   let target, intent;
   if (kind === 'item') {
     const i = s.items.find(x => x.id === id);
+    if (i && i.loc === 'run') return say(s, BM.catRun), false;
     if (!i || i.loc !== 'slot') return false;
     if (sealed(s, room(i.node).lvl)) return say(s, BM.deep), false;
     if (!canHold(p, i)) return say(s, i.d.wt === 3 && p.floating ? BM.heavy : BM.full), false;
@@ -163,7 +164,7 @@ function arrive(s) {
   p.lifted = false;
   if (it && it.k === 'grab' && !it.ready && it.item.loc === 'slot') {
     const i = it.item, to = i.flee > 0 && freeSlot(s, k => k !== i.node && !wet(s, k) && !sealed(s, room(k).lvl) && room(k).lvl >= room(i.node).lvl);
-    if (to) { i.flee--; i.node = to; p.intent = null; say(s, BM.cat); } // the cat bolts; he has to go after it again
+    if (to) { i.flee--; catGo(s, to); say(s, BM.cat); } // the cat bolts; he has to go after it again
     else { it.ready = true; p.busy = TUNE.grab[i.d.wt - 1]; }
   } else act(s);
 }
@@ -202,6 +203,8 @@ function move(s, dt) {
     p.link = { a: p.link.b, b: p.link.a, k: 1 - p.link.k }; p.path = [p.link.b];
     p.lifted = true; p.intent = null; p.busy = 0; p.stun = 0; s.ping = null; say(s, BM.lift);
   }
+  // Climbing up with a load is slow: if the level below seals meanwhile, the water carries him the rest of the way.
+  if (p.link && !p.lifted && room(p.link.b).lvl > room(p.link.a).lvl && sealed(s, room(p.link.a).lvl)) { p.lifted = true; p.path = [p.link.b]; p.intent = null; p.stun = 0; s.ping = null; }
   if (p.stun > 0) p.stun -= dt; // typing on the phone
   else if (p.busy > 0) { p.busy -= dt; if (p.busy <= 0) act(s); }
   else {
@@ -211,7 +214,7 @@ function move(s, dt) {
       const to = p.path[0], N = NODES[to];
       if (p.link || (p.node && isLink(p.node, to))) { // stairs or ladder: cannot turn back midway
         if (!p.link) { p.link = { a: p.node, b: to, k: 0 }; p.node = null; }
-        const A = NODES[p.link.a], L = len(p.link.a, to) / (p.lifted ? 1 : TUNE.climb), need = (1 - p.link.k) * L;
+        const A = NODES[p.link.a], L = len(p.link.a, to) / (p.lifted ? 1 : p.hands.length ? TUNE.climb : TUNE.climbFree), need = (1 - p.link.k) * L;
         if (left >= need) {
           left -= need; p.link = null; p.node = to; p.room = N.rooms[0]; p.lvl = ROOMS[p.room].lvl;
           p.x = N.x; p.z = N.z; p.path.shift();
@@ -228,13 +231,30 @@ function move(s, dt) {
   p.y = Math.max(floorY(p), s.water - TUNE.neck);
 }
 
-function chaos(s) {
-  const p = s.p, c = s.cat;
-  // No deaths: the cat keeps ahead of the water by itself. Up a level if it can, else onto the roof beam (safe, not scored).
-  if (c.loc === 'slot' && s.water > room(c.node).y - 0.05) {
-    const up = freeSlot(s, k => room(k).lvl > room(c.node).lvl && s.water < room(k).y - 0.3);
-    if (up) moveItem(s, c, up); else { c.loc = 'perch'; say(s, BM.catUp); }
+// The cat runs the real route: doors, stairs, ladder. dest is a slot, or 'roof' for the beam above the Para.
+function catGo(s, dest) {
+  const c = s.cat, n = NODES[c.node];
+  c.x = n.x; c.y = room(c.node).y; c.z = n.z; c.dest = dest; c.loc = 'run';
+  c.route = pathFrom(c.node, dest === 'roof' ? 'ht' : dest);
+  if (s.p.intent && s.p.intent.item === c) { s.p.intent = null; s.p.busy = 0; }
+}
+function catRun(s, dt) {
+  const c = s.cat;
+  let left = TUNE.catSpeed * dt;
+  while (left > 1e-9 && c.route.length) {
+    const k = c.route[0], N = NODES[k], ty = room(k).y, d = Math.hypot(N.x - c.x, ty - c.y, N.z - c.z);
+    if (left >= d) { c.x = N.x; c.y = ty; c.z = N.z; c.node = k; c.route.shift(); left -= d; }
+    else { const f = left / d; c.x += (N.x - c.x) * f; c.y += (ty - c.y) * f; c.z += (N.z - c.z) * f; left = 0; }
   }
+  if (!c.route.length) { if (c.dest === 'roof') { c.loc = 'perch'; say(s, BM.catUp); } else { c.loc = 'slot'; c.node = c.dest; } }
+}
+
+function chaos(s, dt) {
+  const p = s.p, c = s.cat;
+  // No deaths: the cat keeps ahead of the water by itself. Up a level if a slot is free, else onto the roof beam (safe, not scored).
+  if (c.loc === 'run') catRun(s, dt);
+  else if (c.loc === 'slot' && (s.water > room(c.node).y - 0.05 || s.t >= T.drift))
+    catGo(s, (s.t < T.drift && freeSlot(s, k => room(k).lvl > room(c.node).lvl && s.water < room(k).y - 0.3)) || 'roof');
   if (s.calm) return;
   if (s.ping && s.t >= s.ping.until) s.ping = null;
   while (s.pings.length && s.t >= s.pings[0].t) {
@@ -260,12 +280,12 @@ export function step(s, dt) {
   s.level = T.levels.filter(x => t >= x).length - 1;
   if (at(T.levels[2])) s.early = s.items.reduce((a, i) => a + (i.loc === 'para' ? i.d.nilai : 0), 0); // banked before Amaran
   if (at(T.drift)) for (const i of s.items) if (i.loc === 'slot') i.loc = lose(i); // swept away
-  chaos(s);
+  chaos(s, dt);
   if (t >= T.boat - T.boatIn && t < T.boat) { s.boat.state = 'arriving'; s.boat.k = (t - T.boat + T.boatIn) / T.boatIn; }
   if (at(T.boat)) { s.boat.state = 'docked'; say(s, BM.boat); }
   if (at(T.move)) { p.locked = true; p.intent = null; p.busy = 0; p.stun = 0; s.ping = null; go(s, 'dock'); say(s, BM.move); }
   if (at(T.jacket)) { p.jacket = true; say(s, BM.jacket); }
-  if (at(T.board)) { p.aboard = true; if (s.cat.loc === 'perch') s.cat.loc = 'ikut'; s.final = score(s); s.boat.state = 'leaving'; say(s, BM.pps); }
+  if (at(T.board)) { p.aboard = true; if (s.cat.loc === 'perch' || s.cat.loc === 'run') s.cat.loc = 'ikut'; s.final = score(s); s.boat.state = 'leaving'; say(s, BM.pps); }
   if (t >= T.board) s.boat.k = Math.min(1, (t - T.board) / (T.end - T.board));
   if (at(T.end)) s.done = true;
   if (!p.aboard) move(s, dt);

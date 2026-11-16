@@ -226,7 +226,10 @@ export function createView(canvas) {
         } else if (i.loc === 'para' && !p.aboard) { g.position.set(3.5 + (np % 5) * 0.55, P.y, 0.4 + Math.floor(np / 5) * 0.6); g.rotation.set(0, 0, 0); np++; }
         else if (i.loc === 'boat' || i.loc === 'para') { // what he saved goes with him
           boat.localToWorld(g.position.set(-0.1 + (nb % 3) * 0.42, 0.08, (Math.floor(nb / 3) - 0.5) * 0.4)); nb++; }
-        else if (i.loc === 'perch') { g.position.lerp(v.set(...PERCH), Math.min(1, dt * 5)); g.rotation.set(0, 0, 0); }
+        else if (i.loc === 'run') { // the cat on its way: hops along, nose first
+          g.rotation.set(0, Math.atan2(g.position.z - i.z, i.x - g.position.x) || g.rotation.y, 0);
+          g.position.set(i.x, i.y + Math.abs(Math.sin(time * 16)) * 0.12, i.z);
+        } else if (i.loc === 'perch') { g.position.lerp(v.set(...PERCH), Math.min(1, dt * 5)); g.rotation.set(0, 0, 0); }
         else if (i.loc === 'ikut') boat.localToWorld(g.position.set(0.75, 0.08, 0.2));
         else { // gone: drifts off and shrinks
           u.gone = Math.min(1, u.gone + dt / 2.5);

@@ -6,20 +6,21 @@ Source of truth for the game. Companions: item-sheet.md (items), driver.md (buil
 A 60 to 90s mobile web game: save a kampung family's belongings as the flood rises. Fun, shareable, warm. Understood in 5 seconds without reading, with one hint at most. Chaotic but fair: you cannot save everything, and choices (light vs heavy, cat vs documents) matter. Records cleanly in a 15s clip.
 
 ## Not in scope
-No accounts, backend, analytics, ads, purchases, audio, asset files, multiple levels, leaderboards, daily seeds, English UI, donation link, agency or charity names. No deaths, injury or drowning shown.
+No accounts, backend, analytics, ads, purchases, multiple levels, leaderboards, daily seeds, English UI, donation link, agency or charity names. No deaths, injury or drowning shown.
+In scope since the Stage 5 review: audio (sound effects and one music loop) and free asset files (models, font, music) whose licence allows a public repo. Every asset is credited in CREDITS.md and on a credits line in the game.
 
 ## Failure even if it works
 Reads as mocking flood victims; reads as official agency content or a charity endorsement; over ~3s to first tap on 4G; item fiddling that makes testers quit before the first result.
 
 ## Tech
-Three.js (pinned, jsdelivr) isometric dollhouse of flat primitives, no asset files. GitHub Pages. Portrait mobile first, centered phone column on desktop. Few small files, sim separate from render. About 195KB gzip (local estimate), needs a perf gate. Fallback if the gate fails: canvas 2D isometric, same sim.js, only render.js changes.
+Three.js 0.187.0, self hosted and tree-shaken (vendor/three.min.js). Isometric dollhouse. GitHub Pages. Portrait mobile first, centered phone column on desktop. Few small files, sim separate from render. Low-poly models, font and music are free assets loaded after the first paint, so the 3s line still counts to Mula enabled. Fallback if the gate fails: canvas 2D isometric, same sim.js, only render.js changes.
 
 ## Rules
 - House: 2 storey on stilts. Ground floor Serambi, Dapur, Ruang Tamu; upper floor Bilik (stairs in Ruang Tamu); roof deck (Para) via a hatch from Bilik. The run ends by boat from the roof.
 - Tap item = walk and grab; tap spot = drop. Two hands. Weight 1/2/3 = speed x1.0/0.75/0.5; weight 3 takes both hands. Waypoint graph pathing.
 - Score = nilai of items in hands, the boat and the roof deck at departure; the rest is swept away. Higher is safer (the PSA lesson).
 - HUD uses only Normal, Waspada, Amaran, Bahaya. No numeric timer: the rising water is the clock, shown as a vertical gauge against the four alert bands.
-- Chaos events: runaway cat, floating items, WhatsApp pings.
+- Chaos events: runaway cat (walks the stairs and ladder ahead of the water if nobody carries it, never swept away), floating items, chat-app style message pings (no logo or app name).
 - Footer: "Projek kreatif, bukan produk rasmi."
 - Pass: first tap under 3s throttled 4G; p5 FPS 30+ on the test phone (Redmi Note 15 Pro 5G); 4 of 5 outside testers finish unaided; wording matches sources; link preview renders.
 - Left to builder: tuning values, camera angle, palette, character, card layout, BM microcopy.
@@ -49,7 +50,7 @@ Rain is one LineSegments draw call (tune or drop in Stage 4). Stage 1 builds orb
 
 ## Ending flow
 At about 78s: "Masa pindah!" for 2s, life jacket, boarding with whatever is in his hands, boat floats off ("Menuju PPS", jiran waving). No early departure. Then the result card (1080x1350 canvas): title, score, items saved, highest alert, one sourced safety line, the line "Barang boleh diganti. Yang penting, kita semua selamat.", buttons Kongsi and Main Semula. No cleanup scene.
-Titles by priority: Beg Siap Awal (most score banked before Amaran), Jaguh Dokumen (Dokumen+Ubat+Wang saved), Sayang Comot (cat saved), Hero Peti Sejuk (saved a decoy), default Tabah Sampai Akhir.
+Titles by priority: Beg Siap Awal (most score banked before Amaran), Dokumen Penting (Dokumen plus every Ubat and Wang in that house saved), Sayang Comot (cat saved), Hero Peti Sejuk (saved a decoy), default Tabah Sampai Akhir.
 Kongsi: Web Share where available, else full screen card to screenshot plus Salin pautan. In-app social browsers can lack Web Share (Stage 0 probe). Static 1200x630 og.png.
 
 ## PSA layer (subtle)

@@ -9,7 +9,7 @@ index.html shell + HUD + loop · data.js all content and tuning · sim.js rules,
 Tests: npm test (rules, 200 seeds) · node test/balance.mjs (bots, pass lines) · node test/browser.mjs (page smoke; --perf [url] Slow 4G load; --review N art shots; --og rebuilds og.png) · test/bots.mjs
 
 ## Stages
-0 to 5 DONE (phone FPS and the hand checks below still open) · NEXT: 6 external testers and launch, by hand
+0 to 5 DONE (owner: FPS fine on the phone, no number) · NOW: 7 look and sound (see driver.md). 7a mechanics DONE: faster walk and pick-up, cat runs the real route, title Dokumen Penting, Malaysian wording. 7b OPEN: assets need owner yes per file, then village landing, zoom + fade, props, character, chat-style messages, font + UI, audio, CREDITS.md · THEN: 6 testers and launch
 
 ## Rules
 - UI alert words: Normal, Waspada, Amaran, Bahaya. Never name any agency or charity in the game. Official level names beyond these are unverified.
@@ -22,18 +22,18 @@ Tests: npm test (rules, 200 seeds) · node test/balance.mjs (bots, pass lines) �
 - Never stuck: a level seals when a floating head is within 0.7 of its ceiling (ground 52s, Bilik 65s); taps there are refused and the water carries him up.
 - Tap empty slot = put down the last item picked up. Tap Para or docked boat = put down everything. Banked items stay banked. Picking = nearest target centre on screen.
 - Boat (playtest): approaches from screen left for 6s, docks at 74s, leaves to screen right.
-- Cat (no-deaths rule): bolts once or twice when reached; climbs by itself when its floor gets wet, ends on the roof beam and rides the boat unscored. Only a carried cat scores. NEEDS OWNER OK.
+- Cat (no-deaths rule, owner OK): bolts once or twice when reached; runs the real route (doors, stairs, ladder) ahead of the water, ends on the roof beam and rides the boat unscored. Only a carried cat scores.
 - Messages: 6 per run, one hoax in Amaran, burst of 3 in Bahaya. An open message blocks taps on the house for up to 4s; Sebarkan costs 3s, Semak sumber rasmi is free. NEEDS PLAYTEST.
-- Floating items wander every 4 to 9s. Slosh dropped as redundant. Tuning: speed 2.0, stairs/ladder x0.4, grab 0.5/0.8/1.3s; yard dry through Normal.
+- Floating items wander every 4 to 9s. Slosh dropped as redundant. Tuning (owner asked faster): speed 2.6, grab 0.25/0.4/0.65s, stairs/ladder x0.2 carrying and x0.6 empty-handed; yard dry through Normal.
 - Art: merged vertex-colour box models (16 draw calls), teh-tarik water, sticker labels (system emoji), rain = one LineSegments.
 - Titles: awal = over half the score banked before Amaran; dokumen = Dokumen plus every Ubat/Wang present in that house; then comot, peti, tabah.
-- Card tip is "Kalau diarah berpindah, pindah segera. Jangan tunggu air naik." (sourced). The design's waterproof-container example could not be sourced, so it is not used. NEEDS OWNER OK.
+- Card tip is "Kalau diarah pindah, terus pindah. Jangan tunggu air naik." (sourced, owner OK). Language: modern casual Bahasa Malaysia, never Indonesian.
 - Kongsi: Web Share with the PNG if allowed, else link only, else Salin pautan + Simpan gambar (<a download>) + long-press on the card image. If share.js cannot load, the end screen shows the plain score and Main Semula.
 
 ## Measurements
 - Load (Slow 4G, cold, median of 5), final live build: 2236ms, 2541ms with 4x CPU, 157KB over 5 requests. Pass. Three.js self hosted and tree-shaken (the CDN min build pulls the unminified core).
 - Slow-phone guard: 65% resolution if frames 20 to 140 average under 40 fps (tested by forcing 25 fps). Not handled: WebGL context loss.
-- Balance, 100 seeds: zero taps 0 (clock never starts); minimal effort (one tap on Dokumen) 10 in 100%; casual bot 49% of nilai; best bot (24 plans, 0.25s reaction) 82%, saves every item 0%, every non-decoy 0 to 1%; clears every non-decoy at 2.5x speed.
+- Balance, 100 seeds: zero taps 0 (clock never starts); minimal effort (one tap on Dokumen) 10 in 100%; casual bot 49% of nilai; best bot (24 plans, 0.25s reaction) 83%, saves every item 0%, every non-decoy 5%; clears every non-decoy at 2.5x speed.
 - "Idle bot saves some" is read as the minimal-effort bot; no free-points mechanic was added. NEEDS OWNER OK.
 - Sources (2026-11-16): 10 kit items and the tip match the DOSM-hosted article; alert words match the flood portal legend; Ready2go link is 404 (UNVERIFIED); "bersedia berpindah" has a news report only.
 - NOT MEASURED OR TESTED: phone FPS (adb lists no device), in-app browser share/download, link preview, real 4G.

@@ -29,6 +29,8 @@ function invariants(s, tag) {
   const p = s.p, where = `${tag} t=${s.t.toFixed(1)}`;
   if (!p.link && p.lvl < 2) assert.ok(p.y + TUNE.height < TUNE.ceil[p.lvl] + 0.05, where + ': head through the ceiling');
   assert.notEqual(s.cat.loc, 'gone', where + ': the cat was swept away');
+  if (s.cat.loc === 'run') assert.ok(s.cat.y > s.water - 0.2, where + ': the cat is running under water');
+  else if (s.cat.loc === 'slot' && s.t < T.drift) seen.add(s.cat.node);
   if (s.ping) assert.ok(!p.lifted && !p.locked && s.t < T.drift + TUNE.pingTtl, where + ': message open while carried or boarding');
   assert.ok(p.hands.every(i => i.loc === 'hand') && s.items.filter(i => i.loc === 'hand').length === p.hands.length, where + ': hands out of sync');
   assert.ok(p.hands.length <= 2 && !(p.hands.length === 2 && p.hands.some(i => i.d.wt === 3)), where + ': too much in hand');
@@ -38,7 +40,7 @@ function invariants(s, tag) {
   if (s.boat.state === 'docked') assert.ok(s.t >= T.boat, where + ': boat docked early');
 }
 
-const cats = new Set(), counts = {};
+const cats = new Set(), counts = {}, seen = new Set();
 let drifts = 0, bolts = 0, perched = 0;
 for (let seed = 1; seed <= SEEDS; seed++) {
   const items = spawn(seed);
@@ -75,7 +77,7 @@ for (let seed = 1; seed <= SEEDS; seed++) {
   });
   assert.ok(s.done && s.p.aboard && s.p.jacket, 'pest did not board');
   assert.equal(score(s), s.items.filter(i => SAFE.includes(i.loc)).reduce((a, i) => a + i.d.nilai, 0), 'score counts something outside hands, boat and roof deck');
-  assert.ok(s.items.every(i => i.loc !== 'slot' && i.loc !== 'perch'), 'item left on a slot or the cat left on the roof at the end');
+  assert.ok(s.items.every(i => !['slot', 'perch', 'run'].includes(i.loc)), 'item left on a slot or the cat left behind at the end');
   perched += s.cat.loc === 'ikut';
 }
 assert.ok(cats.size >= 8, 'cat is not spread over slots: ' + cats.size);

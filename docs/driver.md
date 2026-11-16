@@ -16,10 +16,11 @@
 4 **Performance gate.** Throttled load, FPS on phone, size budget (consider a self hosted esbuild bundle), full code and perf audit. Fallback decision only if 1b was marginal.
 5 **Ending, share card, OG tags, Kongsi** per docs/design.md. Test <a download> in in-app browsers. Absolute URLs. Re-verify PSA lines and item/alert strings against sources. Claude cannot test the social app link preview; leave it for the final checklist.
 6 External testers and launch (by hand).
+7 **Look and sound** (owner review of Stage 5). Language is modern casual Bahasa Malaysia, not Indonesian. Walking faster and pick-up 50% faster, rebalanced with other levers so the bot pass lines hold. Cat walks the real route. Messages look like a chat app. New font and game-feel UI. Landing is a village; Mula zooms into the main house and the roof and front walls fade by opacity. Low-poly models for the village, interior props and character, in the style of the two reference packs. Sound effects and one music loop. Credit every asset. Self review the art, up to 3 rounds. Re-measure load and FPS guard after.
 
 ## Run mode
 Stage 1 ends at the GATE. After the playtest verdict says continue, run Stages 2 to 5 back to back with no stops. Stop only if blocked, a usage limit hits (resume from NOTES.md), a measured pass/fail fails and needs a decision (e.g. canvas 2D fallback), or something here looks wrong. Push after every stage. When Stage 5 is done, post one final checklist: measured numbers vs pass/fail, art screenshots to review, link preview test, in-app share test, 5 tester round, and anything unverified.
 
 ## Hard rules
-Free tools only, no asset files, no deaths, no ads, no donation link. Alert words Normal, Waspada, Amaran, Bahaya only. No agency or charity names in the game. Footer "Projek kreatif, bukan produk rasmi." Casual BM. Never claim virality.
+Free tools and free assets only (CC0, or a licence that allows redistribution in a public repo; credit every one in CREDITS.md and in the game). Ask the owner before each download: file, source, size, licence. No deaths, no ads, no donation link. Alert words Normal, Waspada, Amaran, Bahaya only. No agency or charity names in the game. Footer "Projek kreatif, bukan produk rasmi." Casual BM. Never claim virality.
 Public repo: no personal names, emails or private plans in files or commits. Never force push or delete outside the repo. If blocked or anything here looks wrong, stop and say so.
