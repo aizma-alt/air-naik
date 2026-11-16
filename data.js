@@ -92,8 +92,9 @@ export const BM = {
   footer: 'Projek kreatif, bukan produk rasmi.', tagline: 'Hujan tak berhenti. Selamatkan apa yang boleh.',
   shareText: 'Aku dapat skor {n} dalam Air Naik! Kau boleh selamatkan berapa?',
   salinOk: 'Link dah disalin!', saveHint: 'Tekan lama gambar untuk save, atau screenshot je.',
-  pingTitle: 'Mesej baru', ok: 'OK', sebarBtn: 'Sebarkan', semakBtn: 'Semak sumber rasmi',
+  chatName: 'Group Kampung', chatSub: 'Jiran, Sepupu, Kawan, Anda', senders: ['Jiran sebelah', 'Sepupu', 'Kawan sekolah'], unknown: 'Nombor tak dikenali', fwd: 'Dimajukan berkali-kali',
+  ok: 'OK 👍', sebarBtn: 'Sebarkan', semakBtn: 'Semak sumber rasmi',
   sebar: 'Sibuk forward mesej...', semak: 'Bijak. Semak dulu.',
-  hoax: 'Dimajukan berkali-kali: "Air akan naik 10 kaki malam ni!! Sebarkan!!"',
+  hoax: 'Air akan naik 10 kaki malam ni!! Sebarkan cepat!!',
   chats: ['Hujan lebat lagi ke kat sana?', 'Dah makan ke belum?', 'Jaga diri tau!', 'Bateri phone cukup tak?', 'Air dah naik ke?', 'Apa-apa roger tau.'],
 };

@@ -59,7 +59,7 @@ async function smoke() {
   await page.goto(LOCAL + '?debug&calm&seed=7');
   await page.waitForFunction(() => window.__ready);
   await page.waitForTimeout(1200); await shot('1-landing');
-  await page.locator('#mula').tap();
+  await page.locator('#mula').tap({ force: true });
   await page.waitForTimeout(700); await shot('2-cutaway-mid');
   await page.waitForTimeout(1300); await shot('3-start');
   assert.equal(await sim(() => window.__game.sim.t), 0, 'clock ran before the first tap in the house');
@@ -111,7 +111,7 @@ async function smoke() {
   const bx = [], G = f => page.evaluate(f), held = n => page.waitForFunction(n => window.__game.sim.p.hands.length === n, n, { timeout: 20000 });
   const at = k => page.evaluate(k => { const g = window.__game, n = g.nodes[k]; return [n.x, g.rooms[n.rooms[0]].y + 0.3, n.z]; }, k);
   await page.goto(LOCAL + '?debug&calm&seed=3'); await page.waitForFunction(() => window.__ready);
-  await page.locator('#mula').tap(); await page.waitForTimeout(1700);
+  await page.locator('#mula').tap({ force: true }); await page.waitForTimeout(1700);
   await touch(...await at(await G(() => window.__game.sim.items.find(i => i.d.wt === 3).node))); await held(1);
   assert.equal(await G(() => window.__game.sim.p.hands[0].d.wt), 3);
   await shot('b2-weight-3');
@@ -131,14 +131,16 @@ async function smoke() {
   await shot('b10-boat-leaving');
   // Third run, chaos on: the message card blocks the house, its buttons work, and the bots give the same scores in the page as in Node.
   await page.goto(LOCAL + '?debug&seed=11'); await page.waitForFunction(() => window.__ready);
-  await page.locator('#mula').tap(); await page.waitForTimeout(1700);
+  await page.locator('#mula').tap({ force: true }); await page.waitForTimeout(1700);
   await touch(...await at('t1'));
   const untilPing = kind => page.evaluate(k => { const g = window.__game; while (!(g.sim.ping && g.sim.ping.kind === k) && !g.sim.done) g.step(g.sim, 1 / 30); }, kind);
   await untilPing('chat'); await page.waitForTimeout(200);
   assert.equal(await page.locator('#ping').isVisible(), true, 'message card not shown');
   await shot('c1-chat');
-  await touch(...await at(await G(() => window.__game.sim.items.find(i => i.id === 'dokumen').node)));
-  assert.equal(await G(() => window.__game.sim.p.intent), null, 'tap went through the message card');
+  const before = await G(() => window.__game.sim.p.intent && window.__game.sim.p.intent.k);
+  await touch(...await at('k3')); // a slot low on the screen, clear of the card
+  assert.equal(await G(() => window.__game.sim.p.intent && window.__game.sim.p.intent.k), before, 'tap went through while a message was open');
+  assert.equal(await page.locator('#ping').isVisible(), true, 'the blocked tap closed the message');
   await page.locator('#ping button[data-a=ok]').tap(); await page.waitForTimeout(100);
   assert.equal(await page.locator('#ping').isHidden(), true, 'OK did not close the message');
   await untilPing('hoax'); await page.waitForTimeout(200); await shot('c2-hoax');
@@ -153,7 +155,7 @@ async function smoke() {
   const flaky = await ctx.newPage();
   await flaky.route('**/share.js', r => r.abort());
   await flaky.goto(LOCAL + '?debug&calm&seed=7'); await flaky.waitForFunction(() => window.__ready);
-  await flaky.locator('#mula').tap(); await flaky.waitForTimeout(1700);
+  await flaky.locator('#mula').tap({ force: true }); await flaky.waitForTimeout(1700);
   await flaky.evaluate(() => { const g = window.__game; g.tap(g.sim, 'item', 'dokumen'); while (g.sim.t < 81.5) g.step(g.sim, 1 / 30); });
   await flaky.waitForFunction(() => !document.getElementById('end').hidden, null, { timeout: 15000 });
   assert.equal(await flaky.locator('#endT').textContent(), 'Skor 10', 'no plain score when the card cannot load');
@@ -179,7 +181,7 @@ async function review(round) {
   await page.goto(LOCAL + '?seed=7'); await page.waitForTimeout(400); await shot('00-first-paint');
   await page.goto(LOCAL + '?debug&seed=7'); await page.waitForFunction(() => window.__ready);
   await page.waitForTimeout(2500); await shot('01-landing');
-  await page.locator('#mula').tap(); await page.waitForTimeout(750); await shot('02-cutaway'); await page.waitForTimeout(1200); await shot('03-start');
+  await page.locator('#mula').tap({ force: true }); await page.waitForTimeout(750); await shot('02-cutaway'); await page.waitForTimeout(1200); await shot('03-start');
   await page.evaluate(async () => { const b = await import('/test/bots.mjs'); setInterval(() => { const s = window.__game.sim; if (!s.done && (s.ping ? s.t > s.ping.until - 2.5 : b.free(s))) b.casual(s); }, 500); });
   for (const t of [3, 9, 16, 24, 33, 41, 48, 53.5, 58, 63, 66, 71, 75, 79.4, 81]) {
     await page.waitForFunction(t => window.__game.sim.t >= t, t, { timeout: 30000 }); await shot(`t${String(t).padStart(4, '0')}`);
