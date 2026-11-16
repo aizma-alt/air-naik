@@ -65,6 +65,8 @@ async function smoke() {
   await page.waitForTimeout(700); await shot('2-cutaway-mid');
   await page.waitForTimeout(1300); await shot('3-start');
   assert.equal(await sim(() => window.__game.sim.t), 0, 'clock ran before the first tap in the house');
+  await page.waitForFunction(() => window.__sounds !== undefined);
+  assert.equal(await sim(() => window.__sounds), 20, 'not every recorded sound loaded');
   assert.equal(await page.locator('#hint').textContent(), 'Klik barang');
 
   // Tap the Dokumen box through the real pointer path, then the roof deck.
@@ -154,11 +156,15 @@ async function smoke() {
   assert.equal(await G(() => window.__low), false, 'low-res guard fired on a fast machine');
   assert.deepEqual(errors, [], 'console or page errors');
   // share.js and models.bin fail to load: the run must play on the box models and still end with the score and a working Main Semula.
+  // One sound file is missing and one is not a sound: those two stay synthesized, the other eighteen load.
   const flaky = await ctx.newPage();
   await flaky.route('**/share.js', r => r.abort()); await flaky.route('**/models.bin', r => r.abort());
+  await flaky.route('**/sounds/thunder.ogg', r => r.abort()); await flaky.route('**/sounds/meow.ogg', r => r.fulfill({ body: 'not a sound', contentType: 'audio/ogg' }));
   await flaky.goto(LOCAL + '?debug&calm&seed=7'); await flaky.waitForFunction(() => window.__ready && window.__pack !== undefined);
   assert.equal(await flaky.evaluate(() => window.__pack), false, 'a failed models.bin was reported as loaded');
   await flaky.locator('#mula').tap({ force: true }); await flaky.waitForTimeout(1700);
+  await flaky.waitForFunction(() => window.__sounds !== undefined);
+  assert.equal(await flaky.evaluate(() => window.__sounds), 18, 'a broken sound file was counted, or it took the good ones down');
   await flaky.evaluate(() => { const g = window.__game; g.tap(g.sim, 'item', 'dokumen'); while (g.sim.t < 81.5) g.step(g.sim, 1 / 30); });
   await flaky.waitForFunction(() => !document.getElementById('end').hidden, null, { timeout: 15000 });
   assert.equal(await flaky.locator('#endT').textContent(), 'Skor 10', 'no plain score when the card cannot load');

@@ -137,7 +137,9 @@
     <ul>
       <li>Enjin 3D: Three.js (lesen MIT)</li>
       <li>Model perabot, orang, kucing dan bot: Kenney (kenney.nl), lesen CC0. Furniture Kit, Mini Characters, Cube Pets, Watercraft Kit</li>
-      <li>Kampung, rumah, barang, bunyi dan muzik: dibuat dalam kod, khas untuk game ni</li>
+      <li>Bunyi hujan, guruh, air, tapak kaki, kucing, cengkerik dan katak: Ylmir, rubberduck, IgnasD, Peludo, Wolfgang_ dan AJ_ di OpenGameArt.org, lesen CC0</li>
+      <li>Bunyi butang dan lagu menang: Kenney (Interface Sounds, Music Jingles), lesen CC0</li>
+      <li>Kampung, rumah, barang, muzik dan bunyi lain: dibuat dalam kod, khas untuk game ni</li>
       <li>Fon: Fredoka, The Fredoka Project Authors (SIL Open Font License 1.1)</li>
       <li>Emoji: fon sistem peranti anda</li>
       <li>Rujukan gaya sahaja: Polygonia Low Poly City Pack (antonmoek), Low Poly Isometric Rooms (Brynn)</li>
@@ -153,7 +155,7 @@ import { createSim, step, tap, score } from './sim.js';
 const $ = id => document.getElementById(id), q = new URLSearchParams(location.search), debug = q.has('debug');
 const COLORS = ['#57cc99', '#f4d35e', '#f08a24', '#e5383b'];
 const LAZY3D = false; // true: Three.js loads on Mula instead of on the landing (fallback if the 3s gate fails)
-let sharing, cardFile, audio, sim, view, playing = false, last = 0, msgN = 0, toastT = 0, hint = '', frames = 0, slow = 0, low = false, stepT = 0, thunderT = 6, first = true;
+let sharing, cardFile, audio, packed, sim, view, playing = false, last = 0, msgN = 0, toastT = 0, hint = '', frames = 0, slow = 0, low = false, stepT = 0, thunderT = 6, first = true;
 try { first = !localStorage.getItem('airnaik-seen'); } catch { /* private mode: the hint hand shows every time */ }
 function fail(e) { console.error(e); $('land').querySelector('p').textContent = BM.fail; } // WebGL missing or the script did not load
 
@@ -169,7 +171,7 @@ async function boot() {
   view = createView($('c')); newSim(); view.frame(0);
   $('app').classList.add('on'); $('mula').disabled = false;
   window.__ready = Math.round(performance.now()); // ms from navigation to Mula enabled with 3D drawn
-  view.models('./models.bin').then(ok => { window.__pack = ok; }); // furniture, people, cat and boat arrive after the first frame; box models stay if this fails
+  packed = view.models('./models.bin').then(ok => { window.__pack = ok; }); // furniture, people, cat and boat arrive after the first frame; box models stay if this fails
   document.fonts.load('700 16px Fredoka').then(() => document.documentElement.classList.add('ft')).catch(() => {}); // font comes after the 3D, so it never slows the first tap
   if (debug) window.__game = { get sim() { return sim; }, view, step, tap, nodes: NODES, rooms: ROOMS };
   requestAnimationFrame(loop);
@@ -181,7 +183,7 @@ function start(skip) {
   view.begin(skip); playing = true; ft.length = 0;
   sharing ||= import('./share.js'); // fetched during the run, not on the first paint
   sharing.catch(() => {}); // a failed fetch is handled in showEnd
-  if (!audio) import('./audio.js').then(m => { audio = m.createAudio(); $('mute').textContent = audio.muted ? '🔇' : '🔊'; if (!skip) sfx('whoosh'); }).catch(() => {}); // sound is optional
+  if (!audio) import('./audio.js').then(m => { audio = m.createAudio(); packed.then(() => audio.load('./sounds/')).then(n => { window.__sounds = n; }); $('mute').textContent = audio.muted ? '🔇' : '🔊'; if (!skip) sfx('whoosh'); }).catch(() => {}); // sound is optional
   else { audio.level(0); audio.motor(false); sfx('click'); }
 }
 $('mute').onclick = () => { if (audio) $('mute').textContent = audio.toggle() ? '🔇' : '🔊'; };

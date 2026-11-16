@@ -58,24 +58,19 @@ Kongsi: Web Share where available, else full screen card to screenshot plus Sali
 - Rooms have bold wall colours and furniture (Kenney CC0 models, baked into one file by `npm run bake`). Things sit on that furniture at different heights: a counter stays dry longer than a mat on the floor, and an item only floats once the water reaches it. The fridge and the TV have their own spot. Water has rain rings, current streaks and a wake behind pak cik; the day darkens as the alert rises; lightning from Amaran. Points pop up when something is banked, the phone buzzes on key moments (off with the mute button), and on the first run a hand shows where to tap. Pak cik wears a T-shirt and kain pelikat. Messages look like a chat app with no logo or app name.
 - Font: Fredoka (OFL). UI is chunky and outlined, like a game, not a web page.
 - Sound list. Effects: tap, footsteps on wood, pick up, put down, bank on the Para, refused (hands full or too heavy), alert level up (three steps of urgency), message ding, message sent whoosh, good-choice chime, cat meow, splash into water, wading slosh, carried up by the water, sweep at 62s, boat motor and horn, life jacket click, boat leaving, result jingle, button click, zoom whoosh. Ambience: rain (light and heavy layers), distant thunder, flowing flood water, frogs and crickets on the landing. Music: one loop, calm at Normal, tenser by Bahaya.
-- Sound files proposed, NOT downloaded yet (found 2026-11-16, each needs the owner's yes; every sound has a synthesized fallback in `audio.js`). All CC0, direct links, no login:
+- Sound files (owner said yes 2026-11-17; all CC0, full credit in `CREDITS.md`). 20 files, 671 KB, in `sounds/`, fetched after the models once Mula is tapped. Each one replaces its synthesized sound when it arrives; a file that is missing or will not decode keeps the synthesized one.
 
-| For | File | Source | Size | By |
-|---|---|---|---|---|
-| Rain, light and heavy | `Rain MP3.zip` (4 loops, 25 to 45s, pick 1 or 2) | opengameart.org/content/rain-loopable | 3.2 MB zip | Ylmir |
-| Thunder, flowing water, wood footsteps | `sfx_100_v2.zip` (100 effects, pick a few) | opengameart.org/content/100-cc0-sfx-2 | 2.4 MB zip | rubberduck |
-| Flood water bed | `sfx_loops.zip` (30 loops, pick 1) | opengameart.org/content/30-cc0-sfx-loops | 3.5 MB zip | rubberduck |
-| Cat | `Meow.ogg` | opengameart.org/content/meow | 9.8 KB | IgnasD |
-| Cat (other voice) | `kitten_mew-1_0.ogg` | opengameart.org/content/kitten-mew | 5.3 KB | AntumDeluge |
-| Splash | `splash1_0.wav`, `splash2_0.wav` | opengameart.org/content/water-splash-and-sand-footsteps | 225 KB, 151 KB | Peludo |
-| Crickets | `crickets_1.mp3` (11s loop) | opengameart.org/content/crickets-ambient-noise-loopable | 184 KB | Wolfgang |
-| Frogs | `birdsCrickets.zip` | opengameart.org/content/birdcricketfrog-and-mosquito-sounds | 380 KB zip | AJ-0 |
-| Boat engine | `engine_sound.mp3` (a car engine, may not fit) | opengameart.org/content/engine-sounds2 | 829 KB | pauliuw |
-| Taps, clicks, ding, chime, refused, put down | Interface Sounds (100 files) | kenney.nl/assets/interface-sounds | zip, size not shown | Kenney |
-| Footsteps on wood | Impact Sounds (130 files) | kenney.nl/assets/impact-sounds | zip, size not shown | Kenney |
-| Result jingle | Music Jingles (85 files) | kenney.nl/assets/music-jingles | zip, size not shown | Kenney |
+| Sound | File | From |
+|---|---|---|
+| Rain (one loop, louder with each alert) | `rain.mp3` | OpenGameArt, Ylmir |
+| Flood water bed, thunder, footsteps on wood, wading | `water.ogg`, `thunder.ogg`, `step1-3.ogg`, `wade1-2.ogg` | OpenGameArt, rubberduck |
+| Cat | `meow.ogg` | OpenGameArt, IgnasD |
+| Splash | `splash.wav` | OpenGameArt, Peludo |
+| Crickets and frog at Normal | `crickets.mp3`, `frog.wav` | OpenGameArt, Wolfgang_ and AJ_ |
+| Tap and button, pick up, put down, bank, good choice, refused, message ding | `click`, `pick`, `put`, `bank`, `good`, `no`, `ding` (.ogg) | Kenney Interface Sounds |
+| Result jingle | `win.ogg` | Kenney Music Jingles |
 
-  No good free file found for: boat horn, whoosh, wading, alert beeps. Those stay synthesized. Limits: Kenney audio is OGG only and there is no ffmpeg on the build machine, so nothing can be trimmed or converted; a file a phone cannot decode falls back to the synthesized sound. Only the files picked go in the repo, loaded after Mula.
+  Still synthesized: music, alert beeps, boat motor and horn, whoosh, sweep. Not used: `engine_sound.mp3` (a car, 829 KB), the kitten mew, the second splash, Kenney Impact Sounds (not downloaded, the wood footsteps above cover it). Picked by name and by measured length, loudness and pitch, not by ear: the Kenney ones and the jingle are the least certain. To swap one, change its line in `FILES` or `REC` in `audio.js`. No ffmpeg on the build machine: MP3s were cut on frame boundaries and the WAV sliced, nothing was re-encoded.
 - Sound never blocks play: it starts on the Mula tap, has a mute button, and the game works without it.
 
 ## PSA layer (subtle)

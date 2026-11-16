@@ -1,6 +1,11 @@
-// audio.js: every sound is made with Web Audio here, no files. Created on the Mula tap (browsers need a tap before sound).
+// audio.js: every sound can be made here with Web Audio alone. Created on the Mula tap (browsers need a tap before sound).
 // Music is a quiet pentatonic loop that speeds up with the alert level. Mute is remembered.
-// These are the fallback for every sound in docs/design.md; recorded files can replace them one by one.
+// load() then swaps in the recorded CC0 files in sounds/ (see CREDITS.md) one by one; a file that fails keeps its synthesized sound.
+const FILES = { rain: 'rain.mp3', water: 'water.ogg', crickets: 'crickets.mp3', thunder: 'thunder.ogg', step1: 'step1.ogg', step2: 'step2.ogg', step3: 'step3.ogg', wade1: 'wade1.ogg', wade2: 'wade2.ogg', meow: 'meow.ogg', splash: 'splash.wav', frog: 'frog.wav',
+  uiClick: 'click.ogg', uiPick: 'pick.ogg', uiPut: 'put.ogg', uiBank: 'bank.ogg', uiGood: 'good.ogg', uiNo: 'no.ogg', uiDing: 'ding.ogg', uiWin: 'win.ogg' };
+const BEDS = { rain: [0.18, 0.28, 0.4, 0.5], water: [0.0001, 0.1, 0.22, 0.35], crickets: [1, 0.3, 0.0001, 0.0001] }; // looping files: gain at each alert level
+const REC = { step: [['step1', 1.2], ['step2', 0.45], ['step3', 0.63]], slosh: [['wade1', 1.25], ['wade2', 1]], cat: [['meow', 0.63]], splash: [['splash', 0.63]], thunder: [['thunder', 0.45, 0.6]],
+  tap: [['uiClick', 0.15]], click: [['uiClick', 0.3]], grab: [['uiPick', 0.3]], drop: [['uiPut', 0.3]], bank: [['uiBank', 0.35]], good: [['uiGood', 0.3]], no: [['uiNo', 0.3]], ping: [['uiDing', 0.4]], win: [['uiWin', 0.55]] }; // effect: takes of [file, gain, start at]; gains even out how loud the files were recorded
 const SCALE = [220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99]; // A minor pentatonic
 const TUNE = [0, 2, 4, 2, 5, 4, 2, 1, 0, 2, 4, 5, 7, 5, 4, 2, 0, 2, 4, 2, 5, 7, 8, 7, 5, 4, 2, 4, 1, 2, 0, -1]; // -1 = rest
 
@@ -28,6 +33,11 @@ export function createAudio() {
   };
   const rain = noise(2600, 0.035), heavy = noise(900, 0.0001), flow = noise(260, 0.0001); // light rain; heavy rain and flood water come in with the alert
   let motor = null;
+  const buf = {}, beds = {}; // decoded files, and the gain of each looping one
+  const shot = (name, vol, from = 0, at = 0) => { // one recorded effect; natural sounds are pitched a little differently each time
+    const s = ctx.createBufferSource(), g = ctx.createGain();
+    s.buffer = buf[name]; s.playbackRate.value = name.startsWith('ui') ? 1 : 0.94 + Math.random() * 0.12; g.gain.value = vol; s.connect(g).connect(out); s.start(ctx.currentTime + at, from);
+  };
 
   const SFX = {
     tap: () => tone(700, 0, 0.06, 'sine', 0.1),
@@ -55,18 +65,35 @@ export function createAudio() {
       const n = TUNE[step % TUNE.length], at = Math.max(0, next - ctx.currentTime);
       if (n >= 0) tone(SCALE[n] * 2, at, 0.42, 'triangle', 0.055);
       if (step % 8 === 0) tone(SCALE[[0, 3, 2, 4][(step / 8) % 4 | 0]] / 2, at, 0.9, 'sine', 0.09);
-      if (level === 0 && step % 4 === 2) for (let i = 0; i < 3; i++) tone(4300, at + i * 0.045, 0.03, 'sine', 0.012); // crickets, until the rain drowns them
+      if (level === 0 && buf.frog && step % 16 === 9 && Math.random() < 0.5) { shot('frog', 0.1, 0, at); shot('frog', 0.08, 0, at + 0.4); }
+      if (level === 0 && !beds.crickets && step % 4 === 2) for (let i = 0; i < 3; i++) tone(4300, at + i * 0.045, 0.03, 'sine', 0.012); // crickets, until the rain drowns them
       step++; next += 60 / (88 + level * 14) / 2;
     }
   }, 100);
   document.addEventListener('visibilitychange', () => document.hidden ? ctx.suspend() : ctx.resume());
 
-  return {
-    play: name => { if (SFX[name] && ctx.state === 'running') SFX[name](); },
-    level: l => { // rain, flood water and tempo follow the alert
-      level = l; const t = ctx.currentTime;
-      rain.gain.setTargetAtTime(0.035 + l * 0.012, t, 0.8); heavy.gain.setTargetAtTime([0.0001, 0.01, 0.035, 0.06][l], t, 0.8); flow.gain.setTargetAtTime([0.0001, 0.02, 0.05, 0.08][l], t, 0.8);
+  const api = {
+    play: name => {
+      if (ctx.state !== 'running') return;
+      const takes = (REC[name] || []).filter(r => buf[r[0]]);
+      if (takes.length) shot(...takes[Math.random() * takes.length | 0]); else if (SFX[name]) SFX[name]();
     },
+    level: l => { // rain, flood water and tempo follow the alert; a recorded loop takes over from its synthesized layer
+      level = l; const set = (g, v) => g.gain.setTargetAtTime(v, ctx.currentTime, 0.8);
+      set(rain, beds.rain ? 0.0001 : 0.035 + l * 0.012); set(heavy, beds.rain ? 0.0001 : [0.0001, 0.01, 0.035, 0.06][l]); set(flow, beds.water ? 0.0001 : [0.0001, 0.02, 0.05, 0.08][l]);
+      for (const k in beds) set(beds[k], BEDS[k][l]);
+    },
+    load: dir => Promise.all(Object.entries(FILES).map(async ([name, file]) => { // resolves to how many files are in use
+      try {
+        const r = await fetch(dir + file); if (!r.ok) throw 0;
+        const b = await ctx.decodeAudioData(await r.arrayBuffer()); if (!b) throw 0;
+        buf[name] = b;
+        if (BEDS[name]) { // loop inside the file: a cut MP3 has a rough first frame and padding at the end
+          const s = ctx.createBufferSource(), g = beds[name] = ctx.createGain();
+          s.buffer = b; s.loop = true; s.loopStart = 0.15; s.loopEnd = b.duration - 0.15; g.gain.value = 0.0001; s.connect(g).connect(out); s.start(0, 0.15); api.level(level);
+        }
+      } catch { /* this one stays synthesized */ }
+    })).then(() => Object.keys(buf).length),
     motor(on) { // the boat engine: a low buzz that fades in and out
       if (on && !motor) {
         const o = ctx.createOscillator(), l = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain();
@@ -77,4 +104,5 @@ export function createAudio() {
     get muted() { return muted; },
     toggle() { muted = !muted; out.gain.setTargetAtTime(muted ? 0 : 0.9, ctx.currentTime, 0.03); try { localStorage.setItem('airnaik-mute', muted ? '1' : '0'); } catch { /* fine */ } return muted; },
   };
+  return api;
 }
