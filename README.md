@@ -27,7 +27,7 @@ No deaths, no ads, no in-app purchases.
 ## Under the hood
 
 - **Three.js 0.187**, self-hosted and tree-shaken, rendered with an orthographic isometric dollhouse camera.
-- **Sim and renderer are separate.** `sim.js` has no Three.js in it, so headless bots can play the game thousands of times for balancing.
+- **Sim and renderer are separate.** `sim.js` has no Three.js in it, so headless bots can play hundreds of seeded runs for balancing.
 - **Seeded runs.** Every layout comes from a seed, so a bug or a lucky run can be replayed exactly.
 - **Fast first tap.** Plain HTML paints first, then the 3D scene, then the models and sound stream in. The first tap comes in about 2.3 s on throttled Slow 4G.
 - **Baked models.** The Kenney GLBs are baked into one small `models.bin` at build time, so the game ships without a GLTF loader.
