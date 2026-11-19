@@ -1,55 +1,80 @@
 # Air Naik!
 
-A short mobile web game about a flood in a Malaysian kampung. The water is rising. Save what you can before the rescue boat comes.
+![Air Naik!](og.png)
 
-**Play:** https://aizma-alt.github.io/air-naik/
+**The water is coming up. You have about 80 seconds and two hands.**
 
-Projek kreatif, bukan produk rasmi.
+Air Naik! is a short arcade game for mobile browsers about a flood in a Malaysian kampung. Grab the family's stuff and get it up high before the rescue boat comes. You can't save everything, so every trip up the stairs is a choice: the documents or the medicine, the TV or the cat.
 
-## How to play
+▶ **[Play in your browser](https://aizma-alt.github.io/air-naik/)**. No install, no account. Made for phones in portrait, and it works on desktop too.
 
-- Tap an item to walk over and pick it up. You have two hands. Heavy items slow you down, and the heaviest take both hands.
-- Tap a high spot (the roof deck, the boat) to put things down where the water can't reach.
-- The rising water is the clock. The alert goes Normal, Waspada, Amaran, Bahaya.
-- Watch out for the cat, items floating away and message pings. Some messages are hoaxes.
-- When the boat arrives, you score what's in your hands, on the roof and in the boat.
+*Projek kreatif, bukan produk rasmi.*
 
-A run takes about 80 seconds. You can't save everything, so choose.
+---
+
+## How it plays
+
+- **Tap an item** to walk over and grab it. **Tap a high spot** to drop it there.
+- **Two hands, real weight.** Light things are quick. Heavy things slow you down. The fridge takes both hands and it's probably not worth it.
+- **The water is the timer.** There's no countdown, just the flood climbing from Normal to Waspada, Amaran and Bahaya, one room at a time.
+- **Chaos.** The cat bolts. Items float off. Your phone keeps buzzing with messages, and some of them are hoaxes.
+- **Get out.** When the boat docks at the roof, whatever is in your hands, on the roof deck or in the boat counts. The rest goes with the water.
+
+At the end you get a title for how you played (Beg Siap Awal, Sayang Comot, Hero Peti Sejuk...) and a result card you can share.
+
+No deaths, no ads, no in-app purchases.
+
+## Under the hood
+
+- **Three.js 0.187**, self-hosted and tree-shaken, rendered with an orthographic isometric dollhouse camera.
+- **Sim and renderer are separate.** `sim.js` has no Three.js in it, so headless bots can play the game thousands of times for balancing.
+- **Seeded runs.** Every layout comes from a seed, so a bug or a lucky run can be replayed exactly.
+- **Fast first tap.** Plain HTML paints first, then the 3D scene, then the models and sound stream in. The first tap comes in about 2.3 s on throttled Slow 4G.
+- **Baked models.** The Kenney GLBs are baked into one small `models.bin` at build time, so the game ships without a GLTF loader.
+- **Sound.** Web Audio synthesizes every sound first. Recorded CC0 files replace them as they load, and a file that fails to load keeps its synthesized version.
 
 ## Run it locally
 
-The game is plain HTML and JavaScript modules with no build step. Serve the folder with any static server:
+No build step. Serve the folder and open it:
 
 ```
 npx serve .
 ```
 
-Then open the address it prints. Phone portrait is the main target.
+Dev URL flags:
 
-Handy URL options: `?debug` shows FPS, `?seed=N` repeats a run, `?calm` turns the chaos events off.
+| Flag | Does |
+| --- | --- |
+| `?debug` | FPS overlay (average and p5) |
+| `?seed=N` | Replay a specific layout |
+| `?calm` | Turn the chaos events off |
 
-## Develop
+## Tests and tools
 
 ```
 npm install
-npm test                  # game rules over 200 seeds
-node test/balance.mjs     # bot players check the difficulty
-node test/browser.mjs     # page smoke test in headless Chromium
-npm run bake              # rebuild models.bin from tools/kenney
-npm run vendor            # rebuild vendor/three.min.js
+npm test                  # rules check across 200 seeds
+node test/balance.mjs     # bot players: lazy, casual and best-case pass lines
+node test/browser.mjs     # headless Chromium smoke test (--perf, --review N, --og)
+npm run bake              # tools/kenney/*.glb → models.bin
+npm run vendor            # rebuild the tree-shaken vendor/three.min.js
 ```
 
-| File | What it does |
-| --- | --- |
-| `index.html` | Page, HUD and game loop |
-| `data.js` | All content, wording and tuning numbers |
-| `sim.js` | Game rules, no Three.js |
-| `render.js`, `models.js` | Camera, models, effects, tap picking |
-| `audio.js` | Sound and music |
-| `share.js` | Result card and sharing |
+## Project layout
 
-Design notes are in `docs/`.
+| File | Role |
+| --- | --- |
+| `index.html` | Shell, HUD, game loop |
+| `data.js` | Items, rooms, wording, timeline, all tuning |
+| `sim.js` | Game rules, pathing, water, scoring |
+| `render.js` | Camera, animation, effects, tap picking |
+| `models.js` | Village and house geometry, `models.bin` loader |
+| `audio.js` | Synth and recorded sound, music |
+| `share.js` | Result card, Kongsi, link preview image |
+| `docs/` | Design doc, item sheet, build stages |
 
 ## Credits
 
-Built with [Three.js](https://threejs.org). 3D models and some sounds by [Kenney](https://www.kenney.nl), other sounds from [OpenGameArt](https://opengameart.org), font Fredoka. Full list and licences in [CREDITS.md](CREDITS.md).
+Engine: [Three.js](https://threejs.org) (MIT). 3D models and UI sounds: [Kenney](https://www.kenney.nl) (CC0). Ambient and foley sounds: various artists on [OpenGameArt](https://opengameart.org) (CC0). Font: Fredoka (OFL).
+
+Full per-file credits are in [CREDITS.md](CREDITS.md).
