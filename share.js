@@ -51,7 +51,7 @@ export function drawCard(s) {
   text(g, r.title, W / 2, 330, 112, CREAM, 900, W - 140);
   pill(g, W / 2, 520, 480, 170, '#f4d35e'); text(g, 'Skor ' + r.score, W / 2, 526, 112, '#1b1b1b', 900);
   text(g, `${BM.saved}: ${r.saved.length} / ${r.total}`, W / 2, 670, 44, '#fff', 700);
-  stickers(g, r.saved.map(i => i.d.icon), W / 2, 770, 46, 6);
+  stickers(g, r.saved.map(i => i.d.icon), W / 2, 770, r.saved.length > 6 ? 40 : 46, 10); // one row, up to 10
   if (r.cat) text(g, BM.catSafe, W / 2, 925, 36, '#ffffffcc', 600);
   g.fillStyle = '#0b1620b0'; g.beginPath(); g.roundRect(70, 965, W - 140, 130, 24); g.fill();
   g.font = `600 36px ${FONT}`; wrap(g, 'Tip: ' + BM.tip, W - 220).forEach((line, k, all) => text(g, line, W / 2, 1030 + (k - (all.length - 1) / 2) * 46, 36, '#fff', 600));

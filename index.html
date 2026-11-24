@@ -6,6 +6,7 @@
 <title>Air Naik!</title>
 <meta name="description" content="Hujan tak berhenti. Selamatkan apa yang boleh.">
 <meta name="theme-color" content="#0d1b26">
+<link rel="icon" href="data:,">
 <link rel="canonical" href="https://aizma-alt.github.io/air-naik/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Air Naik!">
@@ -51,7 +52,7 @@
   #mula:enabled{animation:bob .7s infinite alternate ease-in-out}
   @keyframes bob{to{transform:translateY(-7px);box-shadow:0 13px 0 var(--ink)}}
   footer{margin-top:16px;font-size:12px;font-weight:600;opacity:.9;text-shadow:0 1px 3px #000}
-  footer a{color:inherit}
+  footer a{color:inherit;display:inline-block;padding:15px 10px;margin:-15px -10px} /* 44px tap area, same layout */
   #kredit{justify-content:center;background:#0b1620f2;gap:12px;font-weight:600;font-size:14px}
   #kredit h2{margin:0;color:var(--sun)} #kredit ul{margin:0;padding:0 8px;list-style:none;max-width:22em} #kredit li{margin:8px 0}
   /* End */
@@ -69,7 +70,7 @@
   @keyframes pop{0%{transform:scale(1.8) rotate(-6deg)}60%{transform:scale(.94)}}
   #tag{font-size:13px;height:18px;margin-top:9px;text-shadow:0 2px 0 var(--ink)}
   #score{position:absolute;right:12px;top:max(14px,env(safe-area-inset-top));font:900 19px/1 var(--f);padding:8px 12px;border:3px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
-  #mute{position:absolute;left:12px;top:max(14px,env(safe-area-inset-top));z-index:4;pointer-events:auto;width:42px;height:42px;padding:0;font-size:19px;border-radius:14px;background:#fff;box-shadow:0 4px 0 var(--ink)}
+  #mute{position:absolute;left:12px;top:max(14px,env(safe-area-inset-top));z-index:4;pointer-events:auto;width:44px;height:44px;padding:0;font-size:19px;border-radius:14px;background:#fff;box-shadow:0 4px 0 var(--ink)}
   #gauge{position:absolute;left:14px;top:19%;width:26px;height:40%;border:3px solid var(--ink);border-radius:13px;overflow:hidden;box-shadow:0 5px 0 var(--ink);
     background:linear-gradient(to top,#57cc99 0 14.3%,#f4d35e 14.3% 42.9%,#f08a24 42.9% 78.6%,#e5383b 78.6%)}
   #fill{position:absolute;left:9px;right:0;bottom:0;height:0;background:#b08a57;border-top:4px solid #fff;border-left:3px solid var(--ink)}
@@ -294,7 +295,7 @@ function loop(now) {
   view.frame(dt, playing ? hint : '');
   const ask = playing && sim.boat.state === 'docked' && !sim.p.locked, jb = $('jaket'); // the boatman asks him to put the jacket on before he boards
   set(jb, 'hidden', !ask); if (ask) { const d = inApp(view.driverAt()); jb.style.left = Math.max(8, Math.min($('app').clientWidth - 72, d.x - 32)) + 'px'; jb.style.top = Math.max(8, d.y - 40) + 'px'; }
-  const tapHere = first && playing && hint ? view.hintAt() : null; if (tapHere) Object.assign(tapHere, inApp(tapHere)); // first run: a hand taps where the hint points
+  const tapHere = first && playing && hint ? view.hintAt() : null; // first run: a hand taps where the hint points (#hand is position:fixed, so viewport pixels as they are)
   set($('hand'), 'hidden', !tapHere); if (tapHere) { $('hand').style.left = tapHere.x + 'px'; $('hand').style.top = tapHere.y + 'px'; }
   // Slow phone guard: if frames 20 to 140 average under 40 fps, draw at 65% resolution with no shadows from then on.
   if (!low && dt > 0 && document.visibilityState === 'visible' && ++frames > 20) {

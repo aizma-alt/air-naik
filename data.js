@@ -84,7 +84,7 @@ export const BM = {
   tag: 'bersedia berpindah',
   hint1: 'Klik barang', hint2: 'Klik tempat tinggi',
   heavy: 'Terlalu berat!', full: 'Tangan penuh!', deep: 'Air dah tinggi sangat!',
-  lift: 'Air dah tinggi, naik atas!', move: 'Masa pindah!',
+  lift: 'Air dah tinggi, naik atas!',
   fail: 'Game tak boleh load. Cuba refresh.',
   cat: 'Comot lari!', catRun: 'Comot tengah lari!', catUp: 'Comot panjat bumbung!',
   // Result card. tip is the one sourced safety line (source in docs/item-sheet.md, never named in the game).

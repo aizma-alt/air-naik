@@ -114,12 +114,12 @@ const RED2 = [0xa83c2a, 0xbb4a35], TIN = [0x8d969c, 0x7a838a, 0xa0a7ab], RUST = 
 const WOOD = [PLANK, [0x9aa3a0, 0x8c9592, 0xa6aeab], [0xc9d9c5, 0xbccdb8, 0xd3e2cf], [0xbcd0dc, 0xaec3d0, 0xc7d9e4], [0xe6d5b0, 0xdac9a3, 0xefdfbd], [0x8f7a66, 0x857060, 0x9a8571]]; // weathered, grey, mint, blue, cream, dark
 const LOG = 0x5e4a3a, TRUNK = [0xa8623f, 0x9a5a3c, 0xb46a44], RING = 0x7a4430, FROND = [0x3fae4f, 0x2f8f43, 0x5cc867], NUT = 0xd9a35b, BUSH = [0x4fae46, 0x5cc25a, 0x43a03f], BERRY = 0xd6453d, GRASS = [0x58c04a, 0x2f7d35, 0x9bd64a], PICKET = [0xc48d55, 0x9a9a94, C.white], DIRT = 0xc4925f;
 
-export function gable(b, cs, x0, x1, y0, y1, z0, z1, alongZ, end = PLANK[0], cap = ZINC_D) { // zinc gable with a ridge cap and eave boards
+function gable(b, cs, x0, x1, y0, y1, z0, z1, alongZ, end = PLANK[0], cap = ZINC_D) { // zinc gable with a ridge cap and eave boards
   b.zinc(cs, x0, x1, y0, y1, z0, z1, alongZ, end);
   if (alongZ) { const m = (x0 + x1) / 2; b.add(cap, m - 0.14, m + 0.14, y1 - 0.03, y1 + 0.09, z0 - 0.04, z1 + 0.04).add(cap, x0 - 0.03, x0 + 0.03, y0 - 0.06, y0 + 0.04, z0, z1).add(cap, x1 - 0.03, x1 + 0.03, y0 - 0.06, y0 + 0.04, z0, z1); }
   else { const m = (z0 + z1) / 2; b.add(cap, x0 - 0.04, x1 + 0.04, y1 - 0.03, y1 + 0.09, m - 0.14, m + 0.14).add(cap, x0, x1, y0 - 0.06, y0 + 0.04, z0 - 0.03, z0 + 0.03).add(cap, x0, x1, y0 - 0.06, y0 + 0.04, z1 - 0.03, z1 + 0.03); }
 }
-export function leanTo(b, cs, x0, x1, ya, yb, z0, z1, cap = ZINC_D) { // zinc lean-to from ya at x0 to yb at x1, sheets running down the slope
+function leanTo(b, cs, x0, x1, ya, yb, z0, z1, cap = ZINC_D) { // zinc lean-to from ya at x0 to yb at x1, sheets running down the slope
   const L = Math.hypot(x1 - x0, yb - ya), th = Math.atan2(yb - ya, x1 - x0), cx = (x0 + x1) / 2, cy = (ya + yb) / 2;
   for (let z = z0, i = 0; z < z1 - 1e-6; z += 0.3, i++) b.add(cs[pick(cs, i)], cx - L / 2, cx + L / 2, cy - 0.04, cy + 0.04, z, Math.min(z + 0.3, z1), 0, 0, th);
   b.add(cap, cx - L / 2, cx + L / 2, cy - 0.07, cy + 0.01, z0 - 0.03, z0 + 0.03, 0, 0, th).add(cap, cx - L / 2, cx + L / 2, cy - 0.07, cy + 0.01, z1 - 0.03, z1 + 0.03, 0, 0, th);
