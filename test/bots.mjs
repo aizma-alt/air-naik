@@ -43,7 +43,7 @@ const planner = P => (s, mem) => {
   const p = s.p;
   if (s.ping) return tap(s, 'ping', 'semak');
   mem.staged ||= new Set(); mem.seal ||= [sealAt(0), sealAt(1)];
-  const speed = TUNE.speed * Math.min(1, ...p.hands.map(i => TUNE.wt[i.d.wt - 1])) * 0.8; // rough, allows for wading
+  const speed = TUNE.speed * TUNE.carry[p.hands.some(i => i.d.wt === 3) ? 2 : p.hands.length] * 0.8; // rough, allows for wading
   const staging = P.stage && s.t < mem.seal[0] - 1;
   const eta = i => routeLen(p.node, i.node) / speed + TUNE.grab[i.d.wt - 1];
   const c = s.items.filter(i => i.loc === 'slot' && !i.d.decoy && (P.cat || i.id !== 'kucing') && canTake(p, i) && !sealed(s, lvl(i))

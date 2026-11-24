@@ -169,9 +169,9 @@ assert.equal(JSON.stringify(createSim(9, true).items.map(i => i.node)), JSON.str
 
 // Speed floor: the heaviest item, wading or the stairs never take him under half of the empty-handed dry speed.
 {
-  const s = createSim(1, true); tap(s, 'slot', 's1'); s.p.hands = [{ d: { wt: 3 } }]; s.water = -9;
-  for (const k of [TUNE.wade[1][1], TUNE.float]) assert.ok(TUNE.speed * Math.max(TUNE.floor, k * TUNE.wt[2]) >= TUNE.speed * 0.5 - 1e-9);
-  assert.equal(TUNE.floor, 0.5); assert.equal(TUNE.climb, 1);
+  const full = TUNE.carry[2] * TUNE.climb; // both hands full on the stairs: the slowest case, 5 on the 10 scale
+  assert.ok(full >= TUNE.floor - 1e-9 && full < TUNE.floor + 0.02, 'both hands on the stairs: ' + full);
+  assert.ok(TUNE.carry[0] > TUNE.carry[1] && TUNE.carry[1] > TUNE.carry[2] && TUNE.climb < 1, 'carrying and climbing must each slow him');
 }
 
 // Play stops when the water is full: no taps except the boat, he goes to the Para and waves, and the boat docks later.

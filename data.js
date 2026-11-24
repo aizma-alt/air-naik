@@ -54,10 +54,10 @@ export const WATER = [[0, -0.25], [10, 0], [22, 1.0], [34, 1.3], [44, 1.6], [50,
 
 export const TUNE = {
   speed: 2.6, // tiles per second, empty hands, dry floor
-  wt: [1, 0.75, 0.5], // speed by heaviest held weight 1/2/3
+  carry: [1, 0.86, 0.72], // speed x by hands in use: none, one, two (a weight 3 item takes both)
   grab: [0.25, 0.4, 0.65], // seconds to pick up, by weight
-  climb: 1, // speed x on the stairs and the ladder, the same for both (not while the water carries him)
-  floor: 0.5, // slowest he ever goes, x speed (5 on a 1 to 10 scale where 10 is empty hands on dry floor): heaviest item, wading, stairs
+  climb: 0.7, // extra speed x on the stairs and the ladder, the same for both (not while the water carries him)
+  floor: 0.5, // slowest he ever goes, x speed. Scale 1 to 10, 10 = empty hands on a dry floor: both hands full on the stairs = 5 (0.72 x 0.7), wading cannot go lower
   wade: [[0.4, 0.85], [1.0, 0.7]], // [depth below which, speed x]: to knee, knee to chest
   float: 0.5, // speed x when floating
   chest: 1.0, neck: 1.2, height: 1.4, // floating starts at chest depth; feet sit at water minus neck

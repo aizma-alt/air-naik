@@ -232,13 +232,14 @@ ping.onclick = e => { if (e.target.dataset.a) { tap(sim, 'ping', e.target.datase
 // Sounds follow what changed since the last frame.
 const NOISE = { [BM.cat]: 'cat', [BM.catUp]: 'cat', [BM.heavy]: 'no', [BM.full]: 'no', [BM.deep]: 'no', [BM.catRun]: 'no', [BM.lift]: 'splash', [BM.sebar]: 'whoosh', [BM.semak]: 'good' };
 let was = {};
+const inApp = q => { const r = $('app').getBoundingClientRect(); return { x: q.x - r.left, y: q.y - r.top }; }; // overlays sit inside #app, which is a centred column on a desktop screen
 function plus(n, x, y) { const d = document.createElement('div'); d.className = 'plus ol'; d.textContent = '+' + n; d.style.left = x + 'px'; d.style.top = y + 'px'; $('app').append(d); setTimeout(() => d.remove(), 900); }
 function sounds(p, dt) {
   const now = { lvl: sim.level, hands: p.hands.length, banked: sim.items.filter(i => i.loc === 'para' || i.loc === 'boat').length, ping: sim.ping, float: p.floating, score: score(sim), x: p.x, z: p.z, t: sim.t, boat: sim.boat.state };
   if (was.lvl !== undefined) {
     if (now.lvl > was.lvl) { audio && audio.level(now.lvl); sfx('alert'); }
     if (now.banked > was.banked) sfx('bank'); else if (now.hands > was.hands) sfx('grab'); else if (now.hands < was.hands) sfx('drop');
-    if (now.score > was.score) { const at = view.toScreen(p.x, p.y + 1.7, p.z); plus(now.score - was.score, at.x, at.y); restart($('score'), 'bump'); } // points fly up from him
+    if (now.score > was.score) { const at = inApp(view.toScreen(p.x, p.y + 1.7, p.z)); plus(now.score - was.score, at.x, at.y); restart($('score'), 'bump'); } // points fly up from him
     if (now.ping && now.ping !== was.ping) sfx('ping');
     if (now.float && !was.float) sfx('splash');
     if (now.t >= T.drift && was.t < T.drift) sfx('sweep');
@@ -292,8 +293,8 @@ function loop(now) {
   }
   view.frame(dt, playing ? hint : '');
   const ask = playing && sim.boat.state === 'docked' && !sim.p.locked, jb = $('jaket'); // the boatman asks him to put the jacket on before he boards
-  set(jb, 'hidden', !ask); if (ask) { const d = view.driverAt(); jb.style.left = Math.max(8, Math.min(innerWidth - 72, d.x - 32)) + 'px'; jb.style.top = Math.max(8, d.y - 68) + 'px'; }
-  const tapHere = first && playing && hint ? view.hintAt() : null; // first run: a hand taps where the hint points
+  set(jb, 'hidden', !ask); if (ask) { const d = inApp(view.driverAt()); jb.style.left = Math.max(8, Math.min($('app').clientWidth - 72, d.x - 32)) + 'px'; jb.style.top = Math.max(8, d.y - 40) + 'px'; }
+  const tapHere = first && playing && hint ? view.hintAt() : null; if (tapHere) Object.assign(tapHere, inApp(tapHere)); // first run: a hand taps where the hint points
   set($('hand'), 'hidden', !tapHere); if (tapHere) { $('hand').style.left = tapHere.x + 'px'; $('hand').style.top = tapHere.y + 'px'; }
   // Slow phone guard: if frames 20 to 140 average under 40 fps, draw at 65% resolution with no shadows from then on.
   if (!low && dt > 0 && document.visibilityState === 'visible' && ++frames > 20) {

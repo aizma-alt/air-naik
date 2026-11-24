@@ -224,12 +224,13 @@ function move(s, dt) {
   else if (p.busy > 0) { p.busy -= dt; if (p.busy <= 0) act(s); }
   else {
     const wade = depth <= 0 ? 1 : (TUNE.wade.find(w => depth < w[0]) || [0, TUNE.float])[1];
-    let left = dt * (p.lifted ? TUNE.lift : TUNE.speed * Math.max(TUNE.floor, wade * Math.min(1, ...p.hands.map(i => TUNE.wt[i.d.wt - 1]))));
+    const wc = wade * TUNE.carry[p.hands.some(i => i.d.wt === 3) ? 2 : p.hands.length], flat = Math.max(TUNE.floor, wc), up = Math.max(TUNE.floor, wc * TUNE.climb); // speed x on the flat and on stairs or ladder
+    let left = dt * (p.lifted ? TUNE.lift : TUNE.speed * flat);
     while (left > 1e-9 && p.path.length) {
       const to = p.path[0], N = NODES[to];
       if (p.link || (p.node && isLink(p.node, to))) { // stairs or ladder: cannot turn back midway
         if (!p.link) { p.link = { a: p.node, b: to, k: 0 }; p.node = null; }
-        const A = NODES[p.link.a], L = len(p.link.a, to) / (p.lifted ? 1 : TUNE.climb), need = (1 - p.link.k) * L;
+        const A = NODES[p.link.a], L = len(p.link.a, to) / (p.lifted ? 1 : up / flat), need = (1 - p.link.k) * L;
         if (left >= need) {
           left -= need; p.link = null; p.node = to; p.room = N.rooms[0]; p.lvl = ROOMS[p.room].lvl;
           p.x = N.x; p.z = N.z; p.path.shift();

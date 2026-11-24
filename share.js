@@ -40,7 +40,7 @@ function wrap(g, str, maxW) { // greedy word wrap with the font already set
 // What the card says, also used for the image alt text.
 export function summary(s) {
   const saved = s.items.filter(i => SAFE.includes(i.loc));
-  return { title: BM.titles[title(s)], score: score(s), saved, total: s.items.length, cat: s.cat.loc === 'ikut' };
+  return { title: BM.titles[title(s)], score: score(s), saved, total: s.items.length, cat: ['hand', 'para', 'boat'].includes(s.cat.loc) };
 }
 
 export function drawCard(s) {
