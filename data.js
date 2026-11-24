@@ -47,10 +47,10 @@ export const BOAT = { x: 7.6, z: 2.6, from: 11, accel: 0.8 }; // from: tiles of 
 
 // Timeline (seconds after the first tap). levels: start of Normal, Waspada, Amaran, Bahaya.
 // max: the water is full and play stops: he waves for help on the Para. boatIn: seconds the boat is seen approaching before it docks at T.boat. Then the player taps the boat (or the jacket bubble): he walks to the dock,
-// puts on the jacket, boards wear seconds later, and the run ends sail seconds after that. No tap, no boarding: the water stops at the Para.
-export const T = { levels: [0, 10, 30, 55], drift: 62, max: 70, boatIn: 3, boat: 75, wear: 0.9, sail: 2 };
-// Water height keyframes [t, y]. Floors reached: Serambi 22s, Dapur 34s, Ruang Tamu 44s, Bilik 58s.
-export const WATER = [[0, -0.25], [10, 0], [22, 1.0], [34, 1.3], [44, 1.6], [50, 2.6], [58, 4.0], [70, 6.05]];
+// puts on the jacket, boards wear seconds later, and the run ends sail seconds after that. No tap: he boards by himself T.auto seconds after docking.
+export const T = { levels: [0, 9, 27, 50], drift: 56, max: 63, boatIn: 3, boat: 68, auto: 5, wear: 0.9, sail: 2 }; // seconds. auto: he boards by himself this long after the boat docks
+// Water height keyframes [t, y]. Whole timeline is 0.9 x the first version (urgency).
+export const WATER = [[0, -0.25], [9, 0], [19.8, 1.0], [30.6, 1.3], [39.6, 1.6], [45, 2.6], [52.2, 4.0], [63, 6.05]];
 
 export const TUNE = {
   speed: 2.6, // tiles per second, empty hands, dry floor
@@ -74,7 +74,7 @@ export const TUNE = {
 };
 
 // Messages: [earliest, latest, kind]. One hoax in Amaran, a burst in Bahaya. None after the sweep at 62s.
-export const PINGS = [[13, 22, 'chat'], [32, 42, 'hoax'], [45, 50, 'chat'], [55.5, 56.5, 'chat'], [58, 59, 'chat'], [60.5, 61.5, 'chat']];
+export const PINGS = [[11.7, 19.8, 'chat'], [28.8, 37.8, 'hoax'], [40.5, 45, 'chat'], [50, 50.9, 'chat'], [52.2, 53.1, 'chat'], [54.5, 55.4, 'chat']];
 
 // view: tiles across the screen in play. far: the same on the landing (the village). sway: yaw swing on the landing, radians. cut: seconds of zoom at Mula.
 export const CAM = { yaw: 45, pitch: 30, view: 10.5, far: 27, sway: 0.22, cut: 1.8 };

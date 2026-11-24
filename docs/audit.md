@@ -88,5 +88,19 @@ Not measured: how any of it sounds, Ogg Vorbis on iPhone and in in-app browsers,
 9. **Difficulty may be too flat after the easier pass.** Evidence (balance.mjs): minimal effort 10 points, casual bot 68% of nilai, best bot 93% and every non-decoy saved in 85% of seeds (it was 7% before). Saving everything stays at 0%. Fix: watch the 6 testers first; if replays feel flat, move `T.levels` or the grab times, not speeds. Effort S (data.js).
 10. **Audio weight.** rain.mp3 216 KB, splash.wav 79 KB, frog.wav 26 KB are the heaviest sound files and load after the first tap. Fix: re-encode the two WAVs (about 90 KB saved) after the owner approves the swap. Effort S.
 
+## Status after the fix pass (2026-11-24)
+Owner feedback: slight lag on the Redmi, felt too relaxed. Timeline is now the old one x0.9 (levels 0/9/27/50, play stops 63 s, boat docks 68 s).
+1. Fixed: he boards by himself 5 s after docking (T.auto). Run length 71.6 s.
+2. Fixed: bubble labelled "Naik bot", 84x74, placed above the man and clamped to the screen.
+3. Partly fixed: dark halo on the flood under the house. Bahaya house box 1.61 to about 2.6 in the audit (slow-phone guard was on, so not a clean comparison). Still under 4:1; the metric is dominated by light wood.
+4. Fixed: sounds for the wave (alert), bubble (good), docking (ping), boarding (click).
+5. Fixed: master limiter, synth gains raised, tempo up with the level.
+6. Mitigated: every .ogg has an .mp3 twin tried when decode fails. Not tested on iPhone: owner to check.
+7. Fixed in code: village split into 24-tile chunks, culled, and only chunks near the house cast shadows. Pixel ratio capped at 1.5. Landing 121 to 100 draw calls vs the first fix attempt (16-tile chunks); phone FPS not measured: owner to check on the Redmi.
+8. Fixed: slot reach 0.65 tile, 12 px minimum text.
+9. Addressed by the 0.9 timeline: best bot saves every non-decoy item in 55% of seeds (was 85%), casual 66%.
+10. Fixed: splash and frog re-encoded to ogg.
+Urgency additions: red vignette from Amaran, pulsing at Bahaya. Not measured how it feels.
+
 ## Checks run
 `npm test` (200 seeds) ok. `node test/balance.mjs` ok (zero taps 0, minimal 10, casual 68%, best 93%). `node test/browser.mjs` was not run here: Playwright's own Chromium is not installed and NOTES records that its smoke run times out on the weight 3 pickup in software GL. Instead: console errors checked at 360x640, 394x718 and 1280x800 in a calm run, a chaos run and a full run to the result card.

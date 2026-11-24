@@ -35,6 +35,8 @@
   @keyframes rain{to{transform:translate(-8px,40px)}}
   canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;opacity:0;transition:opacity .5s}
   .on canvas{opacity:1}
+  #app[data-lvl="2"]::after{background:radial-gradient(ellipse at 50% 46%,#0000 52%,#7a1f1a66)} #app[data-lvl="3"]::after{background:radial-gradient(ellipse at 50% 46%,#0000 44%,#c1121f88);animation:urge .7s infinite alternate ease-in-out}
+  @keyframes urge{from{opacity:.45}to{opacity:1}}
   #app::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 46%,#0000 58%,#0b162070)}
   .layer{z-index:2;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom));transition:opacity .45s}
   .layer.out{opacity:0;pointer-events:none}
@@ -50,6 +52,7 @@
   #land p{margin:0;padding:8px 16px;max-width:18em;border-radius:14px;background:#14212bcc;font-size:15px}
   #mula{margin-top:auto;font-size:30px;padding:18px 62px;border-radius:24px;background:#59d185}
   #mula:enabled{animation:bob .7s infinite alternate ease-in-out}
+  #jaket small{display:block;font:800 13px/1.1 var(--f);color:var(--ink)}
   @keyframes bob{to{transform:translateY(-7px);box-shadow:0 13px 0 var(--ink)}}
   footer{margin-top:16px;font-size:12px;font-weight:600;opacity:.9;text-shadow:0 1px 3px #000}
   footer a{color:inherit;display:inline-block;padding:15px 10px;margin:-15px -10px} /* 44px tap area, same layout */
@@ -64,11 +67,11 @@
   #more button,#more .btn{font-size:16px;padding:10px 16px}
   /* HUD */
   #hud{pointer-events:none}
-  #jaket{position:absolute;z-index:3;width:64px;height:56px;padding:0;font-size:32px;border-radius:20px;background:#fff;animation:bob .5s infinite alternate ease-in-out}
+  #jaket{position:absolute;z-index:3;width:84px;height:74px;padding:0;font-size:32px;line-height:1.05;border-radius:20px;background:#fff;animation:bob .5s infinite alternate ease-in-out}
   #jaket::after{content:'';position:absolute;left:50%;bottom:-12px;margin-left:-9px;border:9px solid transparent;border-top-color:var(--ink);border-bottom:0}
   #alert{font:900 26px/1 var(--f);padding:8px 22px 9px;border:3px solid var(--ink);border-radius:999px;color:var(--ink);box-shadow:0 5px 0 var(--ink);animation:pop .6s}
   @keyframes pop{0%{transform:scale(1.8) rotate(-6deg)}60%{transform:scale(.94)}}
-  #tag{font-size:13px;height:18px;margin-top:9px;text-shadow:0 2px 0 var(--ink)}
+  #tag{font-size:13px;height:22px;line-height:22px;margin-top:9px;padding:0 12px;border-radius:11px;background:#14212bcc;text-shadow:0 2px 0 var(--ink)} #tag:empty{background:none}
   #score{position:absolute;right:12px;top:max(14px,env(safe-area-inset-top));font:900 19px/1 var(--f);padding:8px 12px;border:3px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--ink)}
   #mute{position:absolute;left:12px;top:max(14px,env(safe-area-inset-top));z-index:4;pointer-events:auto;width:44px;height:44px;padding:0;font-size:19px;border-radius:14px;background:#fff;box-shadow:0 4px 0 var(--ink)}
   #gauge{position:absolute;left:14px;top:19%;width:26px;height:40%;border:3px solid var(--ink);border-radius:13px;overflow:hidden;box-shadow:0 5px 0 var(--ink);
@@ -79,7 +82,7 @@
   #gap{flex:1}
   #hint{font:900 19px/1 var(--f);padding:10px 16px;border:3px solid var(--ink);border-radius:16px;background:var(--sun);color:var(--ink);box-shadow:0 5px 0 var(--ink);animation:bob .5s infinite alternate ease-in-out}
   #hands{display:flex;gap:10px;margin-top:14px}
-  .hand{width:100px;height:62px;border:3px solid var(--ink);border-radius:16px;background:#fff;color:var(--ink);box-shadow:0 5px 0 var(--ink),inset 0 -6px 0 #0001;font-size:11px;line-height:1.1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .hand{width:100px;height:62px;border:3px solid var(--ink);border-radius:16px;background:#fff;color:var(--ink);box-shadow:0 5px 0 var(--ink),inset 0 -6px 0 #0001;font-size:12px;line-height:1.1;display:flex;flex-direction:column;align-items:center;justify-content:center}
   .hand b{font-size:25px;font-weight:400}
   .hand:empty{background:#ffffff8c}
   .hand:empty::before{content:'\270B';font-size:24px;opacity:.35}
@@ -95,11 +98,11 @@
   #flash{position:fixed;inset:0;z-index:3;pointer-events:none;background:#fff;opacity:0} #flash.on{animation:flash .5s} @keyframes flash{8%{opacity:.22}30%{opacity:.05}40%{opacity:.16}}
   #ping header{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#0b6b5f;color:#fff}
   #ping header i{width:36px;height:36px;border-radius:50%;background:#cfe9e3;display:grid;place-items:center;font-style:normal;font-size:19px}
-  #ping header b{display:block;font-size:15px} #ping header small{font-size:11px;opacity:.85}
+  #ping header b{display:block;font-size:15px} #ping header small{font-size:12px;opacity:.85}
   #bubble{position:relative;margin:12px 46px 6px 16px;padding:7px 10px 18px;border-radius:0 10px 10px 10px;background:#fff;box-shadow:0 1px 1px #0003;font-size:16px}
   #bubble::before{content:'';position:absolute;left:-8px;top:0;border:8px solid #0000;border-top-color:#fff;border-right-color:#fff;border-radius:3px 0 0 0}
   #bubble strong{display:block;font-size:13px;color:#c2410c} #bubble em{display:block;font-size:12px;color:#667781;margin-bottom:2px}
-  #bubble time{position:absolute;right:9px;bottom:3px;font-size:11px;color:#667781}
+  #bubble time{position:absolute;right:9px;bottom:3px;font-size:12px;color:#667781}
   #ping .row{padding:6px 10px 12px;gap:8px;flex-wrap:nowrap}
   #ping button{flex:1;font:700 14px/1.15 system-ui,sans-serif;padding:10px 6px;border:0;border-radius:999px;background:#fff;color:#0b6b5f;box-shadow:0 1px 1px #0004}
   #dbg{z-index:3;position:absolute;right:12px;top:64px;margin:0;font:11px/1.3 monospace;color:#9f9;text-align:right;pointer-events:none}
@@ -109,7 +112,7 @@
 <div id="app">
   <canvas id="c"></canvas>
   <button id="mute" class="alt" hidden aria-label="Bunyi">🔊</button>
-  <button id="jaket" hidden aria-label="Jaket keselamatan">🦺</button><div id="flash"></div><div id="hand" hidden>👆</div>
+  <button id="jaket" hidden aria-label="Jaket keselamatan">🦺<small>Naik bot</small></button><div id="flash"></div><div id="hand" hidden>👆</div>
   <div id="hud" class="layer" hidden>
     <div id="alert"></div><div id="tag"></div><div id="score"></div>
     <div id="gauge"><div id="fill"></div></div>
@@ -236,13 +239,17 @@ let was = {};
 const inApp = q => { const r = $('app').getBoundingClientRect(); return { x: q.x - r.left, y: q.y - r.top }; }; // overlays sit inside #app, which is a centred column on a desktop screen
 function plus(n, x, y) { const d = document.createElement('div'); d.className = 'plus ol'; d.textContent = '+' + n; d.style.left = x + 'px'; d.style.top = y + 'px'; $('app').append(d); setTimeout(() => d.remove(), 900); }
 function sounds(p, dt) {
-  const now = { lvl: sim.level, hands: p.hands.length, banked: sim.items.filter(i => i.loc === 'para' || i.loc === 'boat').length, ping: sim.ping, float: p.floating, score: score(sim), x: p.x, z: p.z, t: sim.t, boat: sim.boat.state };
+  const now = { calling: sim.calling, dock: sim.boat.state === 'docked' && !p.locked && !p.aboard, jacket: p.jacket, aboard: p.aboard, lvl: sim.level, hands: p.hands.length, banked: sim.items.filter(i => i.loc === 'para' || i.loc === 'boat').length, ping: sim.ping, float: p.floating, score: score(sim), x: p.x, z: p.z, t: sim.t, boat: sim.boat.state };
   if (was.lvl !== undefined) {
     if (now.lvl > was.lvl) { audio && audio.level(now.lvl); sfx('alert'); }
     if (now.banked > was.banked) sfx('bank'); else if (now.hands > was.hands) sfx('grab'); else if (now.hands < was.hands) sfx('drop');
     if (now.score > was.score) { const at = inApp(view.toScreen(p.x, p.y + 1.7, p.z)); plus(now.score - was.score, at.x, at.y); restart($('score'), 'bump'); } // points fly up from him
     if (now.ping && now.ping !== was.ping) sfx('ping');
     if (now.float && !was.float) sfx('splash');
+    if (now.calling && !was.calling) sfx('alert'); // play stops, he waves for help
+    if (now.dock && !was.dock) sfx('ping'); // the jacket bubble pops up
+    if (now.jacket && !was.jacket) sfx('good'); // jacket on
+    if (now.aboard && !was.aboard) sfx('click'); // boarding
     if (now.t >= T.drift && was.t < T.drift) sfx('sweep');
     if (now.boat !== was.boat && audio) audio.motor(now.boat === 'arriving' || now.boat === 'leaving');
     if (now.boat !== was.boat && (now.boat === 'docked' || now.boat === 'leaving')) sfx('horn'); // the horn replaces the old toasts
@@ -257,7 +264,7 @@ function sounds(p, dt) {
 function hud(dt) {
   const p = sim.p, hands = $('hands').children;
   if ($('alert')._lvl !== sim.level) { // new alert level: restart the pop animation
-    const a = $('alert'); a._lvl = sim.level; a.textContent = BM.levels[sim.level]; a.style.background = COLORS[sim.level];
+    const a = $('alert'); $('app').dataset.lvl = sim.level; a._lvl = sim.level; a.textContent = BM.levels[sim.level]; a.style.background = COLORS[sim.level];
     a.style.animation = 'none'; a.offsetWidth; a.style.animation = '';
   }
   set($('tag'), 'textContent', sim.level === 2 ? BM.tag : '');
@@ -294,7 +301,7 @@ function loop(now) {
   }
   view.frame(dt, playing ? hint : '');
   const ask = playing && sim.boat.state === 'docked' && !sim.p.locked, jb = $('jaket'); // the boatman asks him to put the jacket on before he boards
-  set(jb, 'hidden', !ask); if (ask) { const d = inApp(view.driverAt()); jb.style.left = Math.max(8, Math.min($('app').clientWidth - 72, d.x - 32)) + 'px'; jb.style.top = Math.max(8, d.y - 40) + 'px'; }
+  set(jb, 'hidden', !ask); if (ask) { const d = inApp(view.driverAt()); jb.style.left = Math.max(8, Math.min($('app').clientWidth - 92, d.x + 14)) + 'px'; jb.style.top = Math.max(8, d.y - 62) + 'px'; }
   const tapHere = first && playing && hint ? view.hintAt() : null; // first run: a hand taps where the hint points (#hand is position:fixed, so viewport pixels as they are)
   set($('hand'), 'hidden', !tapHere); if (tapHere) { $('hand').style.left = tapHere.x + 'px'; $('hand').style.top = tapHere.y + 'px'; }
   // Slow phone guard: if frames 20 to 140 average under 40 fps, draw at 65% resolution with no shadows from then on.

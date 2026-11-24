@@ -31,11 +31,11 @@ Three.js 0.187.0, self hosted and tree-shaken (vendor/three.min.js). Isometric d
 ## Water logic
 One global water plane rises with the alert ladder. No life jacket at home. Three depth states (tunable): **wading** below chest (x0.85 to knee, x0.7 knee to waist); **floating** at chest or neck or deeper (head above water, y = water minus neck offset, x0.5, can still move and tap; weight 3 items are dropped with "Terlalu berat!" and float). A late player is never stuck: the stairwell and hatch are open and the rising water lifts him up a level. Items float too and stay tappable.
 Timeline defaults (data.js, tune in Stage 2):
-- 0 to 10s Normal: rain, puddles.
-- 10 to 30s Waspada: Serambi floor reached about 22s.
-- 30 to 55s Amaran: Dapur about 34s, Ruang Tamu about 44s. Tag "bersedia berpindah". From about 50s the ground floor is chest deep or more.
-- 55 to 70s Bahaya: Bilik floor about 58s. From about 62s items not on the roof deck, in hands or in the boat drift off. During 62 to 70s he is lifted through the hatch to the roof deck, hands keep their items.
-- 70s (T.max): the water clock stops play. He takes what he holds to the Para and waves both arms for help. The boat appears at 72s, docks at 75s and waits (horn on docking). No toast text.
+- 0 to 9s Normal: rain, puddles.
+- 9 to 27s Waspada: Serambi floor reached about 20s.
+- 27 to 50s Amaran: Dapur about 31s, Ruang Tamu about 40s. Tag "bersedia berpindah". From about 45s the ground floor is chest deep or more. A red vignette fades in from Amaran and pulses at Bahaya.
+- 50 to 63s Bahaya: Bilik floor about 52s. From about 56s items not on the roof deck, in hands or in the boat drift off. During 56 to 63s he is lifted through the hatch to the roof deck, hands keep their items.
+- 63s (T.max): the water clock stops play. He takes what he holds to the Para and waves both arms for help. The boat appears at 65s, docks at 68s (horn) and waits 5s; if nobody taps the bubble or the boat he boards by himself. No toast text.
 - Boarding is by tap: the boatman's jacket bubble (icon only) or the boat. He walks to the dock, what he holds goes on the boat, jacket on (T.wear 0.9s), he boards and the boat leaves; the run ends 2s later (T.sail), about 78.6s if he boards at once. No tap, no boarding: he waits safe on the Para and the run does not end.
 Floor-edge slosh was dropped as redundant.
 
@@ -49,7 +49,7 @@ One Three.js scene, one house model, same OrthographicCamera throughout.
 Rain is one LineSegments draw call (tune or drop in Stage 4). Stage 1 builds orbit and cutaway with boxes, no rain; Stage 3 adds rain, lights, polish. If throttled first interactive fails in Stage 1b, the landing becomes the CSS poster only and Three.js loads on Mula behind a short fade.
 
 ## Ending flow
-From 75s the boat waits at the dock; he puts on the life jacket, boards with whatever is in his hands and the boat floats off (jiran waving, horn and engine, no toast text). No early departure. Then the result card (1080x1350 canvas): title, score, items saved, highest alert, one sourced safety line, the line "Barang boleh diganti. Yang penting, kita semua selamat.", buttons Kongsi and Main Semula. No cleanup scene.
+From 68s the boat waits at the dock; he puts on the life jacket, boards with whatever is in his hands and the boat floats off (jiran waving, horn and engine, no toast text). No early departure. Then the result card (1080x1350 canvas): title, score, items saved, highest alert, one sourced safety line, the line "Barang boleh diganti. Yang penting, kita semua selamat.", buttons Kongsi and Main Semula. No cleanup scene.
 Titles by priority (sim.js title()): Beg Siap Awal (over half the score banked before Amaran), Beg Lengkap (every kit item that spawned is safe, 6 or more spawned), Dokumen Penting (Dokumen plus every Ubat and Wang present), Sayang Comot (cat saved), Bekal Cukup (Air, Makanan, Pakaian), Sedia Isyarat (Lampu, Radio, Bateri, Wisel, 2 or more spawned), Hero Peti Sejuk (saved a decoy), default Tabah Sampai Akhir.
 Kongsi: Web Share where available, else full screen card to screenshot plus Salin pautan. In-app social browsers can lack Web Share (Stage 0 probe). Static 1200x630 og.png.
 
@@ -65,8 +65,8 @@ Kongsi: Web Share where available, else full screen card to screenshot plus Sali
 | Rain (one loop, louder with each alert) | `rain.mp3` | OpenGameArt, Ylmir |
 | Flood water bed, thunder, footsteps on wood, wading | `water.ogg`, `thunder.ogg`, `step1-3.ogg`, `wade1-2.ogg` | OpenGameArt, rubberduck |
 | Cat | `meow.ogg` | OpenGameArt, IgnasD |
-| Splash | `splash.wav` | OpenGameArt, Peludo |
-| Crickets and frog at Normal | `crickets.mp3`, `frog.wav` | OpenGameArt, Wolfgang_ and AJ_ |
+| Splash | `splash.ogg` | OpenGameArt, Peludo |
+| Crickets and frog at Normal | `crickets.mp3`, `frog.ogg` | OpenGameArt, Wolfgang_ and AJ_ |
 | Tap and button, pick up, put down, bank, good choice, refused, message ding | `click`, `pick`, `put`, `bank`, `good`, `no`, `ding` (.ogg) | Kenney Interface Sounds |
 | Result jingle | `win.ogg` | Kenney Music Jingles |
 

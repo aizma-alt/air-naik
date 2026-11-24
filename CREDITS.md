@@ -20,9 +20,9 @@ From OpenGameArt.org:
 - `rain.mp3`: "Rain (loopable)" by Ylmir, file `1.mp3` from `Rain MP3.zip`, cut to 9 seconds. opengameart.org/content/rain-loopable
 - `water.ogg`, `thunder.ogg`, `step1.ogg` to `step3.ogg`, `wade1.ogg`, `wade2.ogg`: "100 CC0 SFX #2" by rubberduck (`loop_water_01`, `thunder_01`, `footstep_wood_01`, `_03`, `_04`, `footstep_wet_02`, `_03`), unchanged. opengameart.org/content/100-cc0-sfx-2
 - `meow.ogg`: "Meow" by IgnasD, unchanged. opengameart.org/content/meow
-- `splash.wav`: "Water Splash and Sand Footsteps" by Peludo, file `splash1_0.wav`, silence cut off. opengameart.org/content/water-splash-and-sand-footsteps
+- `splash.ogg`: "Water Splash and Sand Footsteps" by Peludo, file `splash1_0.wav`, silence cut off, re-encoded to ogg. opengameart.org/content/water-splash-and-sand-footsteps
 - `crickets.mp3`: "Crickets ambient noise (loopable)" by Wolfgang_, file `crickets_1.mp3`, cut to 6 seconds. opengameart.org/content/crickets-ambient-noise-loopable
-- `frog.wav`: "Bird, cricket, frog and mosquito sounds" by AJ_, unchanged. opengameart.org/content/birdcricketfrog-and-mosquito-sounds
+- `frog.ogg`: "Bird, cricket, frog and mosquito sounds" by AJ_, re-encoded to ogg. opengameart.org/content/birdcricketfrog-and-mosquito-sounds
 
 From Kenney (www.kenney.nl):
 - Interface Sounds 1.0: `click.ogg` (click_001), `pick.ogg` (drop_004), `put.ogg` (drop_002), `bank.ogg` (confirmation_002), `good.ogg` (confirmation_004), `no.ogg` (error_003), `ding.ogg` (glass_001), unchanged.

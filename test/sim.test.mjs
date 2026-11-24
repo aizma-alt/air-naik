@@ -56,12 +56,12 @@ for (let seed = 1; seed <= SEEDS; seed++) {
   const before = Object.fromEntries(s.items.map(i => [i.id, i.node]));
   run(s, T.drift - 0.1, s => invariants(s, 'idle ' + seed));
   drifts += s.items.filter(i => i.id !== 'kucing' && i.node !== before[i.id]).length;
-  if (seed <= 20) { // no tap on the boat: it waits at the dock, he stays on the Para, the run never ends
-    run(s, 120, null, false);
-    assert.ok(!s.done && !s.p.aboard && s.boat.state === 'docked' && s.p.lvl === 2, 'boarded or ended without a tap on the boat');
+  if (seed <= 20) { // no tap on the boat: it waits T.auto seconds at the dock, then he boards by himself
+    run(s, T.boat + T.auto - 0.5, null, false);
+    assert.ok(!s.done && !s.p.aboard && s.boat.state === 'docked' && s.p.lvl === 2, 'boarded or ended before the auto board time');
   }
   run(s, 999, s => invariants(s, 'idle ' + seed));
-  assert.ok(s.t >= T.boat && s.t <= (seed <= 20 ? 125 : T.boat + 8), 'run length ' + s.t);
+  assert.ok(s.t >= T.boat && s.t <= T.boat + T.auto + T.wear + T.sail + 3, 'run length ' + s.t);
   assert.equal(score(s), 0, 'idle run scored');
   assert.ok(s.items.every(i => i.loc === (i.id === 'kucing' ? 'ikut' : 'gone')), 'idle run: items not swept, or cat not riding along');
 

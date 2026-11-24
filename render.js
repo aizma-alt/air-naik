@@ -11,7 +11,8 @@ const PACKED = { kucing: 'cat', peti: 'peti', tv: 'tv', radio: 'radio' }; // ite
 
 export function createView(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); // opaque: the ground fills the view
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); // phone dpr is 3.25
+  const PR = Math.min(devicePixelRatio, 1.5); // phone dpr is 3.25; 1.5 is 44% fewer pixels than 2 and still sharp on a cartoon look
+  renderer.setPixelRatio(PR);
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x1d3344);
@@ -43,6 +44,21 @@ export function createView(canvas) {
     return ms.map(m => { const e = new THREE.Mesh(smooth(m.geometry), rimMat); e.userData.rim = true; m.add(e); return e; });
   }
 
+  // Splits a batch mesh into square ground tiles so culling can drop what is off screen, in the shadow pass too. Tiles far from the house stop casting.
+  function tiles(mesh, size) {
+    const g = mesh.geometry, P = g.attributes.position, N = g.attributes.normal, K = g.attributes.color, ix = g.index.array, by = new Map(), out = new THREE.Group();
+    for (let t = 0; t < ix.length; t += 3) {
+      const a = ix[t], b = ix[t + 1], c = ix[t + 2], key = Math.floor((P.getX(a) + P.getX(b) + P.getX(c)) / 3 / size) + ',' + Math.floor((P.getZ(a) + P.getZ(b) + P.getZ(c)) / 3 / size);
+      (by.get(key) || by.set(key, []).get(key)).push(a, b, c);
+    }
+    for (const [key, list] of by) {
+      const map = new Map(), pos = [], nor = [], col = [], idx = [];
+      for (const v of list) { let n = map.get(v); if (n === undefined) { n = pos.length / 3; map.set(v, n); pos.push(P.getX(v), P.getY(v), P.getZ(v)); nor.push(N.getX(v), N.getY(v), N.getZ(v)); col.push(K.getX(v), K.getY(v), K.getZ(v)); } idx.push(n); }
+      const tg = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)).setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)).setAttribute('color', new THREE.Float32BufferAttribute(col, 3)).setIndex(idx);
+      const m = new THREE.Mesh(tg, mesh.material), [i, j] = key.split(',').map(Number); m.userData.near = Math.hypot((i + 0.5) * size - 4.5, (j + 0.5) * size - 1.5) < 26; out.add(m);
+    }
+    return out;
+  }
   const [vb, vlit, vblobs] = buildVillage(), hb = buildHouse();
   const soft = document.createElement('canvas'); soft.width = 128; soft.height = 64; // blob atlas, white with soft alpha
   { const x = soft.getContext('2d'), g = x.createRadialGradient(96, 32, 0, 96, 32, 31);
@@ -57,12 +73,19 @@ export function createView(canvas) {
   deck.scale.set(P.x1 - P.x0, 0.15, Z); deck.position.set((P.x0 + P.x1) / 2, P.y - 0.075, Z / 2); deck.receiveShadow = true;
   shell.add(shade(hb.sh.mesh(shellMat)), hb.glowOut.mesh(shellLit));
   const standIn = shade(hb.f.mesh(solid));
-  scene.add(shade(vb.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, shadowSide: THREE.FrontSide }))), // open batch: front faces cast
+  const village = tiles(vb.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, shadowSide: THREE.FrontSide })), 24); // open batch: front faces cast
+  village.children.forEach(m => shade(m, m.userData.near));
+  scene.add(village,
      vlit.mesh(lit), blobs, shade(hb.h.mesh(solid)), standIn, shade(hb.up.mesh(glass), false), hb.glow.mesh(lit), deck, shell);
 
   // Flood: the whole village under one opaque, unlit mud plane (light, so lit wood and furniture still read against it; unlit, so the alert dimming cannot muddy it).
   const water = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), new THREE.MeshBasicMaterial({ color: C.water }));
   water.rotation.x = -Math.PI / 2; water.position.set(5, 0, 5); water.visible = false; scene.add(water);
+
+  // Dark soft halo on the flood surface under and around the house, so the silhouette reads against the light water.
+  const hc = document.createElement('canvas'); hc.width = hc.height = 64; { const x = hc.getContext('2d'), g = x.createRadialGradient(32, 32, 6, 32, 32, 32); g.addColorStop(0, 'rgba(40,24,8,1)'); g.addColorStop(0.6, 'rgba(40,24,8,0.8)'); g.addColorStop(1, 'rgba(40,24,8,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(17, 11), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(hc), transparent: true, opacity: 0, depthWrite: false }));
+  halo.rotation.x = -Math.PI / 2; halo.position.set(4.5, 0, 1.5); halo.renderOrder = -1; halo.visible = false; scene.add(halo);
 
   // Rain: one LineSegments. Every streak is drawn twice, one loop height apart, so the loop is seamless.
   const DROPS = 420, LOOP = 18, rp = [];
@@ -165,7 +188,7 @@ export function createView(canvas) {
   }
   function resize() { if (canvas.clientWidth) renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); frustum(); }
   addEventListener('resize', resize); resize();
-  const quality = k => { renderer.setPixelRatio(Math.min(devicePixelRatio, 2) * k); sun.castShadow = false; resize(); }; // slow phone: fewer pixels, no shadows
+  const quality = k => { renderer.setPixelRatio(PR * k); sun.castShadow = false; resize(); }; // slow phone: fewer pixels, no shadows
 
   const target = new THREE.Vector3().copy(VILLAGE), v = new THREE.Vector3();
   function frame(dt, hint) {
@@ -191,6 +214,7 @@ export function createView(canvas) {
       rain.material.opacity = 0.28 + 0.08 * sim.level; // heavier as the alert rises
       mood += (sim.level / 3 - mood) * Math.min(1, dt * 0.8); hemi.intensity = 1.9 - 0.12 * mood; sun.intensity = 2.1 - 0.15 * mood; // a slight dusk only: ground, road and sky stay near their Normal colours
       water.visible = sim.water > 0.02; water.position.y = sim.water;
+      halo.material.opacity = 0.62 * Math.min(1, Math.max(0, (sim.water - 1.2) / 1.5)); halo.visible = halo.material.opacity > 0.01; halo.position.y = sim.water + 0.03;
       flow = (flow + dt * (0.5 + 0.5 * sim.level)) % FLOW; streaks.position.set(flow, sim.water + 0.012, 0);
       wake -= dt;
       if (wake < 0) { // a rain drop somewhere, or the man's wake when he wades
@@ -278,7 +302,7 @@ export function createView(canvas) {
       near(g.position.x, g.position.y + g.userData.h / 2 + 0.2, g.position.z, i.d.wt === 3 ? 1 : 0.75, { kind: 'item', id: i.id });
       if (i.loc === 'slot') used[i.node] = 1;
     }
-    for (const k in NODES) if (NODES[k].slot && !used[k]) { const n = NODES[k]; near(n.x + n.at[0], ROOMS[n.rooms[0]].y + n.at[2], n.z + n.at[1], 0.6, { kind: 'slot', id: k }); }
+    for (const k in NODES) if (NODES[k].slot && !used[k]) { const n = NODES[k]; near(n.x + n.at[0], ROOMS[n.rooms[0]].y + n.at[2], n.z + n.at[1], 0.65, { kind: 'slot', id: k }); }
     if (sim.boat.state === 'docked') near(boat.position.x, boat.position.y + 0.2, boat.position.z, 1.3, { kind: 'boat' });
     if (best) return best;
     ndc.set((cx - r.left) / r.width * 2 - 1, -(cy - r.top) / r.height * 2 + 1);

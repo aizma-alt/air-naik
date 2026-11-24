@@ -84,7 +84,7 @@ async function smoke() {
   await touch(40, 0, 40); // empty ground far away: must pick nothing
   assert.equal(await sim(() => window.__game.sim.p.intent), null, 'tap on empty ground was picked');
 
-  for (const [t, name] of [[40, '6-amaran-40s'], [53, '7-ground-deep-53s'], [64, '8-bahaya-64s'], [71, '8b-wave-71s'], [76, '9-boat-76s']]) { await ff(t); await page.waitForTimeout(300); await shot(name); }
+  for (const [t, name] of [[40, '6-amaran-40s'], [48, '7-ground-deep-48s'], [58, '8-bahaya-58s'], [64, '8b-wave-64s'], [70, '9-boat-70s']]) { await ff(t); await page.waitForTimeout(300); await shot(name); }
   assert.equal(await sim(() => window.__game.sim.boat.state), 'docked');
   const jb = await page.evaluate(() => { const b = document.getElementById('jaket'), q = b.getBoundingClientRect(); return { hidden: b.hidden, ok: q.x >= 0 && q.y >= 0 && q.right <= innerWidth && q.bottom <= innerHeight }; });
   assert.ok(!jb.hidden && jb.ok, 'jacket bubble missing or off screen when the boat docks');
@@ -129,9 +129,9 @@ async function smoke() {
   const two = await G(() => window.__game.sim.items.filter(i => i.d.wt === 1 && i.id !== 'kucing').slice(0, 2).map(i => i.node));
   await touch(...await at(two[0])); await held(1); await touch(...await at(two[1])); await held(2);
   await shot('b1-two-hands');
-  for (const [t, wait, name] of [[40, 300, 'b3-wading-40s'], [50, 300, 'b4-floating-50s'], [52.4, 1500, 'b5-carried-up-stairs'], [65.1, 900, 'b6-carried-up-hatch'], [71, 300, 'b7-wave'], [73.8, 300, 'b8-boat-near'], [76, 300, 'b9-boat-docked']]) { await ff(t); await page.waitForTimeout(wait); await shot(name); bx.push(await G(() => window.__game.view.boatAt().x)); }
+  for (const [t, wait, name] of [[36, 300, 'b3-wading-36s'], [45, 300, 'b4-floating-45s'], [47.2, 1500, 'b5-carried-up-stairs'], [58.6, 900, 'b6-carried-up-hatch'], [64, 300, 'b7-wave'], [66.4, 300, 'b8-boat-near'], [69, 300, 'b9-boat-docked']]) { await ff(t); await page.waitForTimeout(wait); await shot(name); bx.push(await G(() => window.__game.view.boatAt().x)); }
   assert.ok(bx[5] < bx[6], 'boat does not come in from screen left: ' + bx.slice(4));
-  assert.equal(await G(() => window.__game.sim.p.lvl), 2, 'not on the roof at 76s');
+  assert.equal(await G(() => window.__game.sim.p.lvl), 2, 'not on the roof at 69s');
   await touch(7.6, 6.35, 2.6);
   assert.equal(await G(() => window.__game.sim.p.intent?.k), 'board', 'tap on the docked boat was not picked');
   await ff(82); await page.waitForTimeout(900);

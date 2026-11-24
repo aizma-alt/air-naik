@@ -300,6 +300,7 @@ export function step(s, dt) {
   chaos(s, dt);
   if (t >= T.boat - T.boatIn && t < T.boat) { s.boat.state = 'arriving'; s.boat.k = (t - T.boat + T.boatIn) / T.boatIn; }
   if (at(T.boat)) s.boat.state = 'docked';
+  if (s.boat.state === 'docked' && s.boardAt === null && !p.locked && t >= T.boat + T.auto) tap(s, 'boat'); // nobody tapped the bubble or the boat: he boards by himself
   if (s.boardAt !== null && !p.aboard && t >= s.boardAt) { p.aboard = true; s.endAt = t + T.sail; if (s.cat.loc === 'perch' || s.cat.loc === 'run') s.cat.loc = 'ikut'; s.final = score(s); s.boat.state = 'leaving'; }
   if (p.aboard) s.boat.k = Math.min(1, 1 - (s.endAt - t) / T.sail);
   if (s.endAt !== null && t >= s.endAt) s.done = true;
