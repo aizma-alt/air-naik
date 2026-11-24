@@ -191,9 +191,10 @@ function start(skip) {
   sharing ||= import('./share.js'); // fetched during the run, not on the first paint
   sharing.catch(() => {}); // a failed fetch is handled in showEnd
   if (!audio) import('./audio.js').then(m => { audio = m.createAudio(); packed.then(() => audio.load('./sounds/')).then(n => { window.__sounds = n; }); $('mute').textContent = audio.muted ? '🔇' : '🔊'; if (!skip) sfx('whoosh'); }).catch(() => {}); // sound is optional
-  else { audio.level(0); audio.motor(false); sfx('click'); }
+  else { audio.level(0); audio.motor(false); }
 }
-$('mute').onclick = () => { if (audio) $('mute').textContent = audio.toggle() ? '🔇' : '🔊'; };
+document.addEventListener('click', e => { if (e.target.closest('button, a')) sfx('click'); }, true); // every button and link answers with a click
+$('mute').onclick = () => { if (audio) { const m = audio.toggle(); $('mute').textContent = m ? '🔇' : '🔊'; if (!m) sfx('click'); } };
 $('kreditBtn').onclick = e => { e.preventDefault(); $('kredit').hidden = false; };
 $('kreditX').onclick = () => $('kredit').hidden = true;
 
@@ -217,7 +218,7 @@ async function showEnd() {
 $('kongsi').onclick = async () => { if (await (await sharing).kongsi(cardFile, sim) === 'fallback') $('more').hidden = false; };
 $('salin').onclick = async () => { // if the clipboard is blocked, show the link so it can be copied by hand
   const sh = await sharing;
-  if (await sh.salin(sim)) $('salin').textContent = BM.salinOk; else $('more').querySelector('p').textContent = sh.LINK;
+  if (await sh.salin(sim)) { $('salin').textContent = BM.salinOk; sfx('good'); } else $('more').querySelector('p').textContent = sh.LINK;
 };
 $('mula').onclick = async () => { try { if (!view) { $('mula').disabled = true; await boot(); } start(false); } catch (e) { fail(e); } };
 $('lagi').onclick = () => { newSim(); start(true); };
@@ -230,8 +231,8 @@ $('c').addEventListener('pointerdown', e => {
 const ping = $('ping'), pingB = ping.querySelectorAll('button'), bubble = $('bubble').children;
 ping.querySelector('header b').textContent = BM.chatName; ping.querySelector('header small').textContent = BM.chatSub;
 [BM.ok, BM.sebarBtn, BM.semakBtn].forEach((t, k) => pingB[k].textContent = t);
-$('jaket').onclick = () => { if (playing && tap(sim, 'boat')) sfx('click'); }; // the boat driver's bubble: tap to board
-ping.onclick = e => { if (e.target.dataset.a) { tap(sim, 'ping', e.target.dataset.a); sfx('click'); } };
+$('jaket').onclick = () => { if (playing) tap(sim, 'boat'); }; // the boat driver's bubble: tap to board
+ping.onclick = e => { if (e.target.dataset.a) tap(sim, 'ping', e.target.dataset.a); };
 
 // Sounds follow what changed since the last frame.
 const NOISE = { [BM.cat]: 'cat', [BM.catUp]: 'cat', [BM.heavy]: 'no', [BM.full]: 'no', [BM.deep]: 'no', [BM.catRun]: 'no', [BM.lift]: 'splash', [BM.sebar]: 'whoosh', [BM.semak]: 'good' };
@@ -249,14 +250,16 @@ function sounds(p, dt) {
     if (now.calling && !was.calling) sfx('alert'); // play stops, he waves for help
     if (now.dock && !was.dock) sfx('ping'); // the jacket bubble pops up
     if (now.jacket && !was.jacket) sfx('good'); // jacket on
-    if (now.aboard && !was.aboard) sfx('click'); // boarding
+    if (now.aboard && !was.aboard) sfx('thud'); // boarding
     if (now.t >= T.drift && was.t < T.drift) sfx('sweep');
     if (now.boat !== was.boat && audio) audio.motor(now.boat === 'arriving' || now.boat === 'leaving');
+    if (now.boat !== was.boat && now.boat === 'arriving') sfx('horn2'); // heard before it is seen
     if (now.boat !== was.boat && (now.boat === 'docked' || now.boat === 'leaving')) sfx('horn'); // the horn replaces the old toasts
     stepT -= dt;
     if (stepT < 0 && !p.floating && !p.aboard && Math.hypot(now.x - was.x, now.z - was.z) > 1e-4) { stepT = 0.27; sfx(sim.water > p.y + 0.05 ? 'slosh' : 'step'); } // footsteps: wood, or water once it is in the house
+    audio && audio.tempo(sim.t / T.max); // the music speeds up as the water rises
     thunderT -= dt;
-    if (now.lvl >= 2 && thunderT < 0) { thunderT = 9 + Math.random() * 9; sfx('thunder'); restart($('flash'), 'on'); } // lightning from Amaran on
+    if (now.lvl >= 2 && thunderT < 0) { thunderT = 7 + Math.random() * 8; sfx('crack'); restart($('flash'), 'on'); setTimeout(() => sfx('thunder'), 250 + Math.random() * 700); } // lightning from Amaran on
   }
   was = now;
 }

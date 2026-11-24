@@ -34,7 +34,7 @@ export function createAudio() {
     return g;
   };
   const rain = noise(2600, 0.035), heavy = noise(900, 0.0001), flow = noise(260, 0.0001); // light rain; heavy rain and flood water come in with the alert
-  let motor = null;
+  let motor = null, prog = 0; // prog: how far the run is, 0 to 1
   const buf = {}, beds = {}; // decoded files, and the gain of each looping one
   const shot = (name, vol, from = 0, at = 0) => { // one recorded effect; natural sounds are pitched a little differently each time
     const s = ctx.createBufferSource(), g = ctx.createGain();
@@ -53,6 +53,9 @@ export function createAudio() {
     click: () => { tone(1500, 0, 0.03, 'square', 0.08); tone(900, 0.05, 0.04, 'square', 0.08); },
     sweep: () => { noise(500, 0.3, 1.6); tone(140, 0, 1.4, 'sine', 0.12, 60); },
     thunder: () => { noise(90, 0.5, 2.4); noise(180, 0.25, 1.2); },
+    crack: () => { noise(3200, 0.45, 0.16); tone(2200, 0, 0.09, 'sawtooth', 0.08, 220); }, // the strike itself; the rumble follows a moment later
+    thud: () => { tone(95, 0, 0.18, 'sine', 0.35, 55); noise(500, 0.18, 0.12); }, // boarding: his feet land in the boat
+    horn2: () => { tone(155, 0, 0.5, 'sawtooth', 0.09); tone(233, 0, 0.5, 'sawtooth', 0.06); }, // the boat far off
     ping: () => { tone(1175, 0, 0.12, 'sine', 0.22); tone(1568, 0.1, 0.28, 'sine', 0.2); },
     cat: () => { tone(620, 0, 0.16, 'sawtooth', 0.05, 880); tone(880, 0.16, 0.3, 'sawtooth', 0.05, 520); },
     splash: () => noise(800, 0.35, 0.6),
@@ -69,7 +72,9 @@ export function createAudio() {
       if (step % 8 === 0) tone(SCALE[[0, 3, 2, 4][(step / 8) % 4 | 0]] / 2, at, 0.9, 'sine', 0.09);
       if (level === 0 && buf.frog && step % 16 === 9 && Math.random() < 0.5) { shot('frog', 0.1, 0, at); shot('frog', 0.08, 0, at + 0.4); }
       if (level === 0 && !beds.crickets && step % 4 === 2) for (let i = 0; i < 3; i++) tone(4300, at + i * 0.045, 0.03, 'sine', 0.012); // crickets, until the rain drowns them
-      step++; next += 60 / (92 + level * 20) / 2;
+      if (prog > 0.4 && step % 4 === 0) tone(62, at, 0.2, 'sine', 0.04 + 0.12 * (prog - 0.4)); // a heartbeat under the tune that grows with the water
+      if (prog > 0.7 && step % 2) tone(3200, at, 0.02, 'square', 0.012 + 0.02 * (prog - 0.7)); // ticking in the last stretch
+      step++; next += 60 / (92 + prog * 66) / 2; // 92 bpm at the start, 158 when play stops: it speeds up all the way, not by alert level
     }
   }, 100);
   document.addEventListener('visibilitychange', () => document.hidden ? ctx.suspend() : ctx.resume());
@@ -80,6 +85,7 @@ export function createAudio() {
       const takes = (REC[name] || []).filter(r => buf[r[0]]);
       if (takes.length) shot(...takes[Math.random() * takes.length | 0]); else if (SFX[name]) SFX[name]();
     },
+    tempo: p => { prog = Math.max(0, Math.min(1, p)); },
     level: l => { // rain, flood water and tempo follow the alert; a recorded loop takes over from its synthesized layer
       level = l; const set = (g, v) => g.gain.setTargetAtTime(v, ctx.currentTime, 0.8);
       set(rain, beds.rain ? 0.0001 : 0.035 + l * 0.012); set(heavy, beds.rain ? 0.0001 : [0.0001, 0.01, 0.035, 0.06][l]); set(flow, beds.water ? 0.0001 : [0.0001, 0.02, 0.05, 0.08][l]);
