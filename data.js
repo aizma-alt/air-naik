@@ -52,10 +52,10 @@ export const T = { levels: [0, 10, 30, 55], drift: 62, max: 70, boatIn: 6, boat:
 export const WATER = [[0, -0.25], [10, 0], [22, 1.0], [34, 1.3], [44, 1.6], [50, 2.6], [58, 4.0], [70, 6.05]];
 
 export const TUNE = {
-  speed: 2.6, // tiles per second, empty hands, dry floor
+  speed: 2.45, // tiles per second, empty hands, dry floor
   wt: [1, 0.75, 0.5], // speed by heaviest held weight 1/2/3
   grab: [0.25, 0.4, 0.65], // seconds to pick up, by weight
-  climb: 0.2, climbFree: 0.6, // speed x on the stairs and the ladder: carrying, empty-handed (not while the water carries him)
+  climb: 0.25, climbFree: 0.6, // speed x on the stairs and the ladder: carrying, empty-handed (not while the water carries him)
   wade: [[0.4, 0.85], [1.0, 0.7]], // [depth below which, speed x]: to knee, knee to chest
   float: 0.5, // speed x when floating
   chest: 1.0, neck: 1.2, height: 1.4, // floating starts at chest depth; feet sit at water minus neck
