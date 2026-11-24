@@ -29,7 +29,7 @@ function invariants(s, tag) {
   const p = s.p, where = `${tag} t=${s.t.toFixed(1)}`;
   if (!p.link && p.lvl < 2) assert.ok(p.y + TUNE.height < TUNE.ceil[p.lvl] + 0.05, where + ': head through the ceiling');
   assert.notEqual(s.cat.loc, 'gone', where + ': the cat was swept away');
-  if (s.cat.loc === 'run') assert.ok(s.cat.y > s.water - 0.2, where + ': the cat is running under water');
+  if (s.cat.loc === 'run') assert.ok(s.cat.wetStart || s.cat.y > s.water - 0.8, where + ': the cat is swimming deep');
   else if (s.cat.loc === 'slot' && s.t < T.drift) seen.add(s.cat.node);
   if (s.ping) assert.ok(!p.lifted && !p.locked && s.t < T.drift + TUNE.pingTtl, where + ': message open while carried or boarding');
   assert.ok(p.hands.every(i => i.loc === 'hand') && s.items.filter(i => i.loc === 'hand').length === p.hands.length, where + ': hands out of sync');
@@ -152,6 +152,40 @@ assert.equal(JSON.stringify(createSim(9, true).items.map(i => i.node)), JSON.str
   put(i => i.id === 'ubat' || i.id === 'wang', 'para'); assert.equal(title(s), 'dokumen');
   s.early = score(s) / 2; assert.equal(title(s), 'dokumen', 'Beg Siap Awal at exactly half');
   s.early = score(s); assert.equal(title(s), 'awal');
+}
+
+// Group titles: every item of the group that spawned has to be safe. The cat title outranks the groups; a full kit outranks Dokumen Penting.
+{
+  const KITS = ['dokumen', 'ubat', 'wang', 'lampu', 'radio', 'bateri', 'wisel', 'air', 'makanan', 'pakaian'];
+  const seed = [...Array(200).keys()].find(n => { const ids = createSim(n, true).items.map(i => i.id); return ['air', 'makanan', 'pakaian'].every(x => ids.includes(x)) && ['lampu', 'radio', 'bateri', 'wisel'].filter(x => ids.includes(x)).length >= 2 && KITS.filter(x => ids.includes(x)).length >= 6; });
+  assert.ok(seed !== undefined, 'no seed with all three supplies');
+  const s = createSim(seed, true), put = (f, loc) => s.items.filter(f).forEach(i => i.loc = loc);
+  put(i => ['air', 'makanan', 'pakaian'].includes(i.id), 'para'); assert.equal(title(s), 'bekal');
+  put(i => ['lampu', 'radio', 'bateri', 'wisel'].includes(i.id), 'para'); assert.equal(title(s), 'bekal', 'Bekal Cukup before Sedia Isyarat');
+  put(i => ['air', 'makanan', 'pakaian'].includes(i.id), 'gone'); assert.equal(title(s), 'isyarat');
+  put(i => i.id === 'kucing', 'hand'); assert.equal(title(s), 'comot', 'the cat title outranks a group');
+  put(i => KITS.includes(i.id), 'para'); assert.equal(title(s), 'lengkap', 'a full kit outranks Dokumen Penting and the cat');
+}
+
+// Speed floor: the heaviest item, wading or the stairs never take him under half of the empty-handed dry speed.
+{
+  const s = createSim(1, true); tap(s, 'slot', 's1'); s.p.hands = [{ d: { wt: 3 } }]; s.water = -9;
+  for (const k of [TUNE.wade[1][1], TUNE.float]) assert.ok(TUNE.speed * Math.max(TUNE.floor, k * TUNE.wt[2]) >= TUNE.speed * 0.5 - 1e-9);
+  assert.equal(TUNE.floor, 0.5); assert.equal(TUNE.climb, 1);
+}
+
+// Play stops when the water is full: no taps except the boat, he goes to the Para and waves, and the boat docks later.
+{
+  const s = createSim(2, true); tap(s, 'slot', 's1');
+  while (s.t < T.max - 0.2) step(s, 0.05);
+  assert.ok(!s.calling);
+  while (s.t < T.max + 0.2) step(s, 0.05);
+  assert.ok(s.calling, 'not calling at max water');
+  assert.equal(tap(s, 'slot', 's1'), false); assert.equal(tap(s, 'para'), false); assert.equal(tap(s, 'boat'), false, 'boat tap before it docks');
+  while (s.t < T.boat - T.boatIn - 0.1) step(s, 0.05);
+  assert.equal(s.boat.state, 'away', 'boat visible before the wave has started');
+  while (s.t < T.boat + 0.1) step(s, 0.05);
+  assert.equal(s.boat.state, 'docked'); assert.equal(s.p.lvl, 2); assert.ok(tap(s, 'boat'), 'bubble tap refused at the dock');
 }
 
 console.log(`ok: ${SEEDS} seeds. items per run ${JSON.stringify(counts)}, cat slots used ${cats.size}/15, ${ITEMS.length} items defined`);

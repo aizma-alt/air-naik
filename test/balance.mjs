@@ -22,9 +22,9 @@ console.log(`best at 2.5x speed: every non-decoy saved in ${pct(easy.map(r => r.
 assert.ok(b.every(r => r.t >= 60 && r.t <= 90), 'run length outside 60 to 90s');
 assert.ok(m.every(r => r.score > 0), 'minimal-effort bot scored 0 in some seed');
 assert.ok(!b.some(r => r.savedAll), 'best bot saved every item in some seed');
-assert.ok(mean(b.map(r => r.savedGood)) <= 0.2, 'best bot saves every non-decoy item too often');
-assert.ok(mean(b.map(ratio)) >= 0.55 && mean(b.map(ratio)) <= 0.85, 'best bot mean outside 55 to 85%');
-assert.ok(mean(c.map(ratio)) >= 0.25 && mean(c.map(ratio)) <= 0.65, 'casual bot mean outside 25 to 65%');
+// Owner asked for an easier game (stairs and ladder at full speed, nothing slower than half speed): the best bot may now clear every non-decoy item, so there is no cap on that.
+assert.ok(mean(b.map(ratio)) >= 0.55 && mean(b.map(ratio)) <= 0.97, 'best bot mean outside 55 to 97%');
+assert.ok(mean(c.map(ratio)) >= 0.25 && mean(c.map(ratio)) <= 0.85, 'casual bot mean outside 25 to 85%');
 assert.ok(mean(c.map(r => r.score > 0)) >= 0.95, 'casual bot scores 0 too often');
 assert.ok(mean(easy.map(r => r.savedGood)) >= 0.9, 'best bot is too weak to trust: it cannot clear the easy game');
 console.log('balance ok');

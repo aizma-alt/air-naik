@@ -46,9 +46,9 @@ export const LINKS = [['sb', 'st'], ['hb', 'ht']]; // the only edges that change
 export const BOAT = { x: 7.6, z: 2.6, from: 11, accel: 0.8 }; // from: tiles of approach; accel: tiles/s2 when leaving
 
 // Timeline (seconds after the first tap). levels: start of Normal, Waspada, Amaran, Bahaya.
-// boatIn: seconds the boat is seen approaching before it docks at T.boat. Then the player taps the boat (or the jacket bubble): he walks to the dock,
+// max: the water is full and play stops: he waves for help on the Para. boatIn: seconds the boat is seen approaching before it docks at T.boat. Then the player taps the boat (or the jacket bubble): he walks to the dock,
 // puts on the jacket, boards wear seconds later, and the run ends sail seconds after that. No tap, no boarding: the water stops at the Para.
-export const T = { levels: [0, 10, 30, 55], drift: 62, max: 70, boatIn: 6, boat: 74, wear: 0.9, sail: 2 };
+export const T = { levels: [0, 10, 30, 55], drift: 62, max: 70, boatIn: 3, boat: 75, wear: 0.9, sail: 2 };
 // Water height keyframes [t, y]. Floors reached: Serambi 22s, Dapur 34s, Ruang Tamu 44s, Bilik 58s.
 export const WATER = [[0, -0.25], [10, 0], [22, 1.0], [34, 1.3], [44, 1.6], [50, 2.6], [58, 4.0], [70, 6.05]];
 
@@ -56,7 +56,8 @@ export const TUNE = {
   speed: 2.6, // tiles per second, empty hands, dry floor
   wt: [1, 0.75, 0.5], // speed by heaviest held weight 1/2/3
   grab: [0.25, 0.4, 0.65], // seconds to pick up, by weight
-  climb: 0.2, climbFree: 0.6, // speed x on the stairs and the ladder: carrying, empty-handed (not while the water carries him)
+  climb: 1, // speed x on the stairs and the ladder, the same for both (not while the water carries him)
+  floor: 0.5, // slowest he ever goes, x speed (5 on a 1 to 10 scale where 10 is empty hands on dry floor): heaviest item, wading, stairs
   wade: [[0.4, 0.85], [1.0, 0.7]], // [depth below which, speed x]: to knee, knee to chest
   float: 0.5, // speed x when floating
   chest: 1.0, neck: 1.2, height: 1.4, // floating starts at chest depth; feet sit at water minus neck
@@ -83,11 +84,11 @@ export const BM = {
   tag: 'bersedia berpindah',
   hint1: 'Klik barang', hint2: 'Klik tempat tinggi',
   heavy: 'Terlalu berat!', full: 'Tangan penuh!', deep: 'Air dah tinggi sangat!',
-  lift: 'Air dah tinggi, naik atas!', boat: 'Bot sampai!', move: 'Masa pindah!',
-  pps: 'Menuju PPS', fail: 'Game tak boleh load. Cuba refresh.',
+  lift: 'Air dah tinggi, naik atas!', move: 'Masa pindah!',
+  fail: 'Game tak boleh load. Cuba refresh.',
   cat: 'Comot lari!', catRun: 'Comot tengah lari!', catUp: 'Comot panjat bumbung!',
   // Result card. tip is the one sourced safety line (source in docs/item-sheet.md, never named in the game).
-  titles: { awal: 'Beg Siap Awal', dokumen: 'Dokumen Penting', comot: 'Sayang Comot', peti: 'Hero Peti Sejuk', tabah: 'Tabah Sampai Akhir' },
+  titles: { awal: 'Beg Siap Awal', dokumen: 'Dokumen Penting', comot: 'Sayang Comot', peti: 'Hero Peti Sejuk', lengkap: 'Beg Lengkap', bekal: 'Bekal Cukup', isyarat: 'Sedia Isyarat', tabah: 'Tabah Sampai Akhir' },
   highest: 'Aras tertinggi', saved: 'Barang selamat', catSafe: 'Comot pun selamat, ikut naik bot.',
   tip: 'Kalau diarah pindah, terus pindah. Jangan tunggu air naik.',
   warm1: 'Barang boleh diganti.', warm2: 'Yang penting, kita semua selamat.',

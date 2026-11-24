@@ -211,13 +211,15 @@ export function createView(canvas) {
       if (pack) wave.rotation.z = waveUp + Math.sin(time * 9) * 0.35; else wave.rotation.x = waveUp + Math.sin(time * 9) * 0.5; // the jiran waves
       const moved = moved0, heavy = p.hands[0] && p.hands[0].d.wt === 3, panic = sim.level === 3 && !p.hands.length; // Bahaya with empty hands: he runs with his arms up
       if (moved) face = Math.atan2(p.x - lastX, p.z - lastZ); // turn to where he walks
+      else if (sim.calling && !p.locked && !p.aboard && !p.hands.length) face += (((yawR - face) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI) * Math.min(1, dt * 8); // waving: turns to face the camera
       lastX = p.x; lastZ = p.z;
       if (p.aboard) { boat.localToWorld(man.position.set(0.25, deckY, 0)); man.rotation.y = yawR + Math.PI / 2; }
       else { man.position.set(p.x, p.y + (moved && !p.floating ? Math.abs(Math.sin(time * 12)) * 0.07 : p.floating ? Math.sin(time * 3) * 0.05 : 0), p.z); man.rotation.y = face; }
+      const calling = sim.calling && !moved && !p.locked && !p.aboard && !p.hands.length; // play is over: both arms up, waving for help
       arms.forEach((a, k) => { // carry pose, swim, or walking swing
         const holding = heavy || p.hands[k];
-        a.rotation.x = heavy ? -2.9 : holding ? -1.25 : p.floating ? -1.4 + Math.sin(time * 5 + k * 3) * 0.5 : moved ? (panic ? -2.7 + Math.sin(time * 14 + k * Math.PI) * 0.35 : Math.sin(time * 12 + k * Math.PI) * 0.7) : 0;
-        a.rotation.z = (k ? 1 : -1) * ((p.floating && !holding ? 0.5 : 0) - rest);
+        a.rotation.x = calling ? -2.8 : heavy ? -2.9 : holding ? -1.25 : p.floating ? -1.4 + Math.sin(time * 5 + k * 3) * 0.5 : moved ? (panic ? -2.7 + Math.sin(time * 14 + k * Math.PI) * 0.35 : Math.sin(time * 12 + k * Math.PI) * 0.7) : 0;
+        a.rotation.z = (k ? 1 : -1) * (calling ? 0.35 + Math.sin(time * 9 + k * Math.PI) * 0.5 - rest : (p.floating && !holding ? 0.5 : 0) - rest);
       });
       const walk = moved && !p.floating && !p.aboard;
       legs.forEach((l, k) => { l.rotation.x = walk ? Math.sin(time * 12 + k * Math.PI) * 0.7 : p.floating ? Math.sin(time * 5 + k * Math.PI) * 0.4 : 0; }); // step, or kick in the water

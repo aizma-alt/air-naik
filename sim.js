@@ -52,7 +52,7 @@ export function createSim(seed, calm = false) {
   cat.flee = calm ? 0 : 1 + (rnd() < TUNE.flee2 ? 1 : 0);
   return {
     seed, calm, rnd, cat, pings, ping: null, early: 0, t: 0, started: false, done: false, water: WATER[0][1], level: 0, final: null,
-    items, boat: { state: 'away', k: 0 }, boardAt: null, endAt: null, msg: '', msgN: 0, held: false, banked: false,
+    items, boat: { state: 'away', k: 0 }, boardAt: null, endAt: null, calling: false, msg: '', msgN: 0, held: false, banked: false,
     p: { x: h.x, z: h.z, y: ROOMS.tamu.y, room: 'tamu', lvl: 0, node: 'home', path: [], link: null, hands: [],
       busy: 0, stun: 0, intent: null, lifted: false, floating: false, locked: false, jacket: false, aboard: false },
   };
@@ -71,12 +71,18 @@ export const sealed = (s, lvl) => lvl < 2 && s.water - TUNE.neck + TUNE.height >
 const SAFE = ['hand', 'para', 'boat'];
 export const score = s => s.final ?? s.items.reduce((a, i) => a + (SAFE.includes(i.loc) ? i.d.nilai : 0), 0);
 // Result title id, by priority (names in BM.titles). awal: more than half the score was on the roof deck before Amaran.
-// dokumen: Dokumen plus every one of Ubat and Wang that was in this house. comot: carried the cat. peti: saved a decoy.
+// lengkap: every kit item that spawned is safe (6 or more spawn). dokumen: Dokumen plus every Ubat and Wang in this house. comot: carried the cat.
+// bekal / isyarat: all of Air, Makanan, Pakaian / of Lampu, Radio, Bateri, Wisel that spawned. peti: saved a decoy.
+const KIT = ['dokumen', 'ubat', 'wang', 'lampu', 'radio', 'bateri', 'wisel', 'air', 'makanan', 'pakaian'];
 export function title(s) {
   const safe = id => s.items.some(i => i.id === id && SAFE.includes(i.loc)), pair = ['ubat', 'wang'].filter(id => s.items.some(i => i.id === id));
+  const grp = (ids, min) => { const here = ids.filter(id => s.items.some(i => i.id === id)); return here.length >= min && here.every(safe); }; // every one of the group that spawned is safe
   if (score(s) > 0 && s.early * 2 > score(s)) return 'awal';
+  if (grp(KIT, 6)) return 'lengkap';
   if (safe('dokumen') && pair.length && pair.every(safe)) return 'dokumen';
   if (safe('kucing')) return 'comot';
+  if (grp(['air', 'makanan', 'pakaian'], 2)) return 'bekal';
+  if (grp(['lampu', 'radio', 'bateri', 'wisel'], 2)) return 'isyarat';
   if (s.items.some(i => i.d.decoy && SAFE.includes(i.loc))) return 'peti';
   return 'tabah';
 }
@@ -130,11 +136,11 @@ export function tap(s, kind, id) {
     return true;
   }
   if (kind === 'boat') { // board: closes any message, he walks to the dock and puts on the jacket there
-    if (s.boat.state !== 'docked' || p.locked || p.lifted) return false;
+    if (s.boat.state !== 'docked' || p.locked) return false;
     s.ping = null; p.locked = true; p.intent = { k: 'board' }; p.busy = 0; p.stun = 0; s.started = true;
     go(s, 'dock'); return true;
   }
-  if (s.ping || p.locked || p.lifted || p.aboard) return false; // an open message blocks the house
+  if (s.ping || p.locked || p.lifted || p.aboard || s.calling) return false; // an open message blocks the house
   let target, intent;
   if (kind === 'item') {
     const i = s.items.find(x => x.id === id);
@@ -218,12 +224,12 @@ function move(s, dt) {
   else if (p.busy > 0) { p.busy -= dt; if (p.busy <= 0) act(s); }
   else {
     const wade = depth <= 0 ? 1 : (TUNE.wade.find(w => depth < w[0]) || [0, TUNE.float])[1];
-    let left = dt * (p.lifted ? TUNE.lift : TUNE.speed * wade * Math.min(1, ...p.hands.map(i => TUNE.wt[i.d.wt - 1])));
+    let left = dt * (p.lifted ? TUNE.lift : TUNE.speed * Math.max(TUNE.floor, wade * Math.min(1, ...p.hands.map(i => TUNE.wt[i.d.wt - 1]))));
     while (left > 1e-9 && p.path.length) {
       const to = p.path[0], N = NODES[to];
       if (p.link || (p.node && isLink(p.node, to))) { // stairs or ladder: cannot turn back midway
         if (!p.link) { p.link = { a: p.node, b: to, k: 0 }; p.node = null; }
-        const A = NODES[p.link.a], L = len(p.link.a, to) / (p.lifted ? 1 : p.hands.length ? TUNE.climb : TUNE.climbFree), need = (1 - p.link.k) * L;
+        const A = NODES[p.link.a], L = len(p.link.a, to) / (p.lifted ? 1 : TUNE.climb), need = (1 - p.link.k) * L;
         if (left >= need) {
           left -= need; p.link = null; p.node = to; p.room = N.rooms[0]; p.lvl = ROOMS[p.room].lvl;
           p.x = N.x; p.z = N.z; p.path.shift();
@@ -243,7 +249,7 @@ function move(s, dt) {
 // The cat runs the real route: doors, stairs, ladder. dest is a slot, or 'roof' for the beam above the Para.
 function catGo(s, dest) {
   const c = s.cat, n = NODES[c.node];
-  c.x = n.x; c.y = room(c.node).y; c.z = n.z; c.dest = dest; c.loc = 'run';
+  c.x = n.x; c.y = room(c.node).y; c.z = n.z; c.dest = dest; c.loc = 'run'; c.wetStart = s.water > c.y + 0.2; // wetStart: caught on a floor that was already flooded
   c.route = pathFrom(c.node, dest === 'roof' ? 'ht' : dest);
   if (s.p.intent && s.p.intent.item === c) { s.p.intent = null; s.p.busy = 0; }
 }
@@ -268,7 +274,7 @@ function chaos(s, dt) {
   if (s.ping && s.t >= s.ping.until) s.ping = null;
   while (s.pings.length && s.t >= s.pings[0].t) {
     const g = s.pings.shift();
-    if (!p.lifted && !p.locked) s.ping = { kind: g.kind, text: g.text, until: s.t + TUNE.pingTtl };
+    if (!p.lifted && !p.locked && !s.calling) s.ping = { kind: g.kind, text: g.text, until: s.t + TUNE.pingTtl };
   }
   const taking = p.intent && p.intent.ready && p.intent.item; // fair: what he is already picking up does not float off
   for (const i of s.items) if (i.loc === 'slot' && i !== c && i !== taking && wet(s, i.node) && !sealed(s, room(i.node).lvl)) { // floating items wander
@@ -289,10 +295,11 @@ export function step(s, dt) {
   s.level = T.levels.filter(x => t >= x).length - 1;
   if (at(T.levels[2])) s.early = s.items.reduce((a, i) => a + (i.loc === 'para' ? i.d.nilai : 0), 0); // banked before Amaran
   if (at(T.drift)) for (const i of s.items) if (i.loc === 'slot') i.loc = lose(i); // swept away
+  if (at(T.max) && !p.locked) { s.calling = true; s.ping = null; p.stun = 0; p.busy = 0; p.intent = { k: 'para' }; go(s, 'pa'); } // play stops: he takes what he holds to the Para, then waves for help
   chaos(s, dt);
   if (t >= T.boat - T.boatIn && t < T.boat) { s.boat.state = 'arriving'; s.boat.k = (t - T.boat + T.boatIn) / T.boatIn; }
-  if (at(T.boat)) { s.boat.state = 'docked'; say(s, BM.boat); }
-  if (s.boardAt !== null && !p.aboard && t >= s.boardAt) { p.aboard = true; s.endAt = t + T.sail; if (s.cat.loc === 'perch' || s.cat.loc === 'run') s.cat.loc = 'ikut'; s.final = score(s); s.boat.state = 'leaving'; say(s, BM.pps); }
+  if (at(T.boat)) s.boat.state = 'docked';
+  if (s.boardAt !== null && !p.aboard && t >= s.boardAt) { p.aboard = true; s.endAt = t + T.sail; if (s.cat.loc === 'perch' || s.cat.loc === 'run') s.cat.loc = 'ikut'; s.final = score(s); s.boat.state = 'leaving'; }
   if (p.aboard) s.boat.k = Math.min(1, 1 - (s.endAt - t) / T.sail);
   if (s.endAt !== null && t >= s.endAt) s.done = true;
   if (!p.aboard) move(s, dt);

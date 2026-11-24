@@ -230,7 +230,7 @@ $('jaket').onclick = () => { if (playing && tap(sim, 'boat')) sfx('click'); }; /
 ping.onclick = e => { if (e.target.dataset.a) { tap(sim, 'ping', e.target.dataset.a); sfx('click'); } };
 
 // Sounds follow what changed since the last frame.
-const NOISE = { [BM.cat]: 'cat', [BM.catUp]: 'cat', [BM.heavy]: 'no', [BM.full]: 'no', [BM.deep]: 'no', [BM.catRun]: 'no', [BM.boat]: 'horn', [BM.lift]: 'splash', [BM.pps]: 'horn', [BM.sebar]: 'whoosh', [BM.semak]: 'good' };
+const NOISE = { [BM.cat]: 'cat', [BM.catUp]: 'cat', [BM.heavy]: 'no', [BM.full]: 'no', [BM.deep]: 'no', [BM.catRun]: 'no', [BM.lift]: 'splash', [BM.sebar]: 'whoosh', [BM.semak]: 'good' };
 let was = {};
 function plus(n, x, y) { const d = document.createElement('div'); d.className = 'plus ol'; d.textContent = '+' + n; d.style.left = x + 'px'; d.style.top = y + 'px'; $('app').append(d); setTimeout(() => d.remove(), 900); }
 function sounds(p, dt) {
@@ -243,6 +243,7 @@ function sounds(p, dt) {
     if (now.float && !was.float) sfx('splash');
     if (now.t >= T.drift && was.t < T.drift) sfx('sweep');
     if (now.boat !== was.boat && audio) audio.motor(now.boat === 'arriving' || now.boat === 'leaving');
+    if (now.boat !== was.boat && (now.boat === 'docked' || now.boat === 'leaving')) sfx('horn'); // the horn replaces the old toasts
     stepT -= dt;
     if (stepT < 0 && !p.floating && !p.aboard && Math.hypot(now.x - was.x, now.z - was.z) > 1e-4) { stepT = 0.27; sfx(sim.water > p.y + 0.05 ? 'slosh' : 'step'); } // footsteps: wood, or water once it is in the house
     thunderT -= dt;
@@ -264,7 +265,7 @@ function hud(dt) {
     const i = p.hands[k] || (p.hands[0] && p.hands[0].d.wt === 3 ? p.hands[0] : null);
     set(hands[k], 'innerHTML', i ? `<b>${i.d.icon}</b>${i.d.name}` : '');
   }
-  hint = !sim.held ? 'item' : !sim.banked && p.hands.length ? 'para' : '';
+  hint = sim.calling ? '' : !sim.held ? 'item' : !sim.banked && p.hands.length ? 'para' : '';
   set($('hint'), 'hidden', !hint); set($('hint'), 'textContent', hint === 'item' ? BM.hint1 : BM.hint2);
   if (sim.msgN !== msgN) { msgN = sim.msgN; set($('toast'), 'textContent', sim.msg); toastT = 1.6; sfx(NOISE[sim.msg]); }
   toastT -= dt; set($('toast'), 'className', toastT > 0 ? 'ol show' : 'ol');
@@ -290,8 +291,8 @@ function loop(now) {
     if (sim.done) { playing = false; showEnd(); }
   }
   view.frame(dt, playing ? hint : '');
-  const ask = playing && sim.boat.state === 'docked' && !sim.p.locked, jb = $('jaket'); // boat waits until he is told to put on the jacket
-  set(jb, 'hidden', !ask); if (ask) { const d = view.driverAt(); jb.style.left = d.x - 32 + 'px'; jb.style.top = d.y - 68 + 'px'; }
+  const ask = playing && sim.boat.state === 'docked' && !sim.p.locked, jb = $('jaket'); // the boatman asks him to put the jacket on before he boards
+  set(jb, 'hidden', !ask); if (ask) { const d = view.driverAt(); jb.style.left = Math.max(8, Math.min(innerWidth - 72, d.x - 32)) + 'px'; jb.style.top = Math.max(8, d.y - 68) + 'px'; }
   const tapHere = first && playing && hint ? view.hintAt() : null; // first run: a hand taps where the hint points
   set($('hand'), 'hidden', !tapHere); if (tapHere) { $('hand').style.left = tapHere.x + 'px'; $('hand').style.top = tapHere.y + 'px'; }
   // Slow phone guard: if frames 20 to 140 average under 40 fps, draw at 65% resolution with no shadows from then on.
