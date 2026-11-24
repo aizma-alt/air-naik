@@ -63,6 +63,8 @@
   #more button,#more .btn{font-size:16px;padding:10px 16px}
   /* HUD */
   #hud{pointer-events:none}
+  #jaket{position:absolute;z-index:3;width:64px;height:56px;padding:0;font-size:32px;border-radius:20px;background:#fff;animation:bob .5s infinite alternate ease-in-out}
+  #jaket::after{content:'';position:absolute;left:50%;bottom:-12px;margin-left:-9px;border:9px solid transparent;border-top-color:var(--ink);border-bottom:0}
   #alert{font:900 26px/1 var(--f);padding:8px 22px 9px;border:3px solid var(--ink);border-radius:999px;color:var(--ink);box-shadow:0 5px 0 var(--ink);animation:pop .6s}
   @keyframes pop{0%{transform:scale(1.8) rotate(-6deg)}60%{transform:scale(.94)}}
   #tag{font-size:13px;height:18px;margin-top:9px;text-shadow:0 2px 0 var(--ink)}
@@ -80,6 +82,7 @@
   .hand b{font-size:25px;font-weight:400}
   .hand:empty{background:#ffffff8c}
   .hand:empty::before{content:'\270B';font-size:24px;opacity:.35}
+  .hand:first-child:empty::before{display:inline-block;transform:scaleX(-1)} /* left hand: the emoji is a right hand, mirrored */
   /* Message: looks like a chat app (header, wallpaper, bubble, quick replies). No logo or app name. */
   #ping{position:absolute;left:6%;right:6%;top:24%;border:3px solid var(--ink);border-radius:20px;overflow:hidden;background:#e9dfd3;color:#111;text-align:left;pointer-events:auto;box-shadow:0 8px 0 var(--ink);font-family:system-ui,sans-serif;font-weight:400;animation:slide .25s cubic-bezier(.3,1.5,.5,1)}
   @keyframes slide{from{transform:translateY(-40px) scale(.9);opacity:0}}
@@ -105,7 +108,7 @@
 <div id="app">
   <canvas id="c"></canvas>
   <button id="mute" class="alt" hidden aria-label="Bunyi">🔊</button>
-  <div id="flash"></div><div id="hand" hidden>👆</div>
+  <button id="jaket" hidden aria-label="Jaket keselamatan">🦺</button><div id="flash"></div><div id="hand" hidden>👆</div>
   <div id="hud" class="layer" hidden>
     <div id="alert"></div><div id="tag"></div><div id="score"></div>
     <div id="gauge"><div id="fill"></div></div>
@@ -223,10 +226,11 @@ $('c').addEventListener('pointerdown', e => {
 const ping = $('ping'), pingB = ping.querySelectorAll('button'), bubble = $('bubble').children;
 ping.querySelector('header b').textContent = BM.chatName; ping.querySelector('header small').textContent = BM.chatSub;
 [BM.ok, BM.sebarBtn, BM.semakBtn].forEach((t, k) => pingB[k].textContent = t);
+$('jaket').onclick = () => { if (playing && tap(sim, 'boat')) sfx('click'); }; // the boat driver's bubble: tap to board
 ping.onclick = e => { if (e.target.dataset.a) { tap(sim, 'ping', e.target.dataset.a); sfx('click'); } };
 
 // Sounds follow what changed since the last frame.
-const NOISE = { [BM.cat]: 'cat', [BM.catUp]: 'cat', [BM.heavy]: 'no', [BM.full]: 'no', [BM.deep]: 'no', [BM.catRun]: 'no', [BM.boat]: 'horn', [BM.lift]: 'splash', [BM.pps]: 'horn', [BM.sebar]: 'whoosh', [BM.semak]: 'good', [BM.jacket]: 'click' };
+const NOISE = { [BM.cat]: 'cat', [BM.catUp]: 'cat', [BM.heavy]: 'no', [BM.full]: 'no', [BM.deep]: 'no', [BM.catRun]: 'no', [BM.boat]: 'horn', [BM.lift]: 'splash', [BM.pps]: 'horn', [BM.sebar]: 'whoosh', [BM.semak]: 'good' };
 let was = {};
 function plus(n, x, y) { const d = document.createElement('div'); d.className = 'plus ol'; d.textContent = '+' + n; d.style.left = x + 'px'; d.style.top = y + 'px'; $('app').append(d); setTimeout(() => d.remove(), 900); }
 function sounds(p, dt) {
@@ -286,6 +290,8 @@ function loop(now) {
     if (sim.done) { playing = false; showEnd(); }
   }
   view.frame(dt, playing ? hint : '');
+  const ask = playing && sim.boat.state === 'docked' && !sim.p.locked, jb = $('jaket'); // boat waits until he is told to put on the jacket
+  set(jb, 'hidden', !ask); if (ask) { const d = view.driverAt(); jb.style.left = d.x - 32 + 'px'; jb.style.top = d.y - 68 + 'px'; }
   const tapHere = first && playing && hint ? view.hintAt() : null; // first run: a hand taps where the hint points
   set($('hand'), 'hidden', !tapHere); if (tapHere) { $('hand').style.left = tapHere.x + 'px'; $('hand').style.top = tapHere.y + 'px'; }
   // Slow phone guard: if frames 20 to 140 average under 40 fps, draw at 65% resolution with no shadows from then on.

@@ -2,10 +2,11 @@
 import * as THREE from 'three';
 import { ROOMS, NODES, DEPTH, BOAT as DOCK, CAM } from './data.js';
 import { itemPos } from './sim.js';
-import { C, SHAPES, PERCH, batch, buildVillage, buildHouse, BODY, ARM, SARONG, NEIGHBOUR, BOAT, loadPack, furnish } from './models.js';
+import { blobMesh, C, SHAPES, PERCH, batch, buildVillage, buildHouse, BODY, ARM, SARONG, NEIGHBOUR, BOAT, SONGKOK, baju, loadPack, furnish } from './models.js';
 
 const { para: P } = ROOMS, Z = DEPTH, Y = new THREE.Vector3(0, 1, 0);
 const HOUSE = new THREE.Vector3(4.5, 3.7, 1.5), VILLAGE = new THREE.Vector3(4.5, 2.0, 3.2); // camera targets: game, landing
+const SW = { x0: -16, x1: 22, z0: -18, z1: 16 }, FLOW = SW.x1 - SW.x0; // the patch around the house that gets ripples and streaks
 const PACKED = { kucing: 'cat', peti: 'peti', tv: 'tv', radio: 'radio' }; // items that have a baked model
 
 export function createView(canvas) {
@@ -22,21 +23,46 @@ export function createView(canvas) {
   scene.add(sun, sun.target);
   const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 160);
   const solid = new THREE.MeshLambertMaterial({ vertexColors: true });
-  const glass = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 0.6, depthWrite: false });
+  const glass = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 0.8, depthWrite: false });
   const lit = new THREE.MeshBasicMaterial({ vertexColors: true }); // window light, unlit
   const shellMat = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true }), shellLit = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true }); // fade at Mula
   const shade = (m, cast = true) => { m.castShadow = cast; m.receiveShadow = true; return m; };
+  // Rim for what must pop against the water (the man, the boat, what he carries): a back-face copy pushed out along smoothed normals, so box corners stay closed.
+  const rimMat = new THREE.MeshBasicMaterial({ color: 0xfff3d6, side: THREE.BackSide });
+  rimMat.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('void main() {', 'attribute vec3 onormal;\nvoid main() {').replace('#include <begin_vertex>', 'vec3 transformed = position + onormal * 0.045;'); };
+  rimMat.customProgramCacheKey = () => 'rim';
+  function smooth(g) {
+    if (g.attributes.onormal) return g;
+    const p = g.attributes.position, n = g.attributes.normal, sum = new Map(), key = i => Math.round(p.getX(i) * 400) + ',' + Math.round(p.getY(i) * 400) + ',' + Math.round(p.getZ(i) * 400), out = new Float32Array(p.count * 3);
+    for (let i = 0; i < p.count; i++) { const k = key(i), a = sum.get(k) || sum.set(k, [0, 0, 0]).get(k); a[0] += n.getX(i); a[1] += n.getY(i); a[2] += n.getZ(i); }
+    for (let i = 0; i < p.count; i++) { const a = sum.get(key(i)), l = Math.hypot(...a) || 1; out.set([a[0] / l, a[1] / l, a[2] / l], i * 3); }
+    return g.setAttribute('onormal', new THREE.BufferAttribute(out, 3));
+  }
+  function rim(root) { // returns the outline meshes so a caller can switch them
+    const ms = []; root.traverse(o => o.isMesh && !o.userData.rim && ms.push(o));
+    return ms.map(m => { const e = new THREE.Mesh(smooth(m.geometry), rimMat); e.userData.rim = true; m.add(e); return e; });
+  }
 
-  const [vb, vlit] = buildVillage(), hb = buildHouse();
+  const [vb, vlit, vblobs] = buildVillage(), hb = buildHouse();
+  const soft = document.createElement('canvas'); soft.width = 128; soft.height = 64; // blob atlas, white with soft alpha
+  { const x = soft.getContext('2d'), g = x.createRadialGradient(96, 32, 0, 96, 32, 31);
+    x.fillStyle = '#fff'; x.shadowColor = '#fff'; x.shadowBlur = 11; x.shadowOffsetX = 1000; x.fillRect(15 - 1000, 15, 34, 34); x.shadowBlur = 0; x.shadowOffsetX = 0;
+    g.addColorStop(0, 'rgba(255,255,255,0.95)'); g.addColorStop(0.55, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(64, 0, 64, 64); }
+  const blobMat = new THREE.MeshBasicMaterial({ color: 0x000000, map: new THREE.CanvasTexture(soft), vertexColors: true, transparent: true, depthWrite: false });
+  blobMat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', 'diffuseColor.a *= vColor.r;'); }; // vertex colour = blob strength, used as alpha
+  blobMat.customProgramCacheKey = () => 'blob';
+  const blobs = blobMesh(vblobs, blobMat); blobs.renderOrder = -1;
   const shell = new THREE.Group();
   const deck = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: C.deck, transparent: true, opacity: 0.85, depthWrite: false })); // own mesh: pulses for the second hint
   deck.scale.set(P.x1 - P.x0, 0.15, Z); deck.position.set((P.x0 + P.x1) / 2, P.y - 0.075, Z / 2); deck.receiveShadow = true;
   shell.add(shade(hb.sh.mesh(shellMat)), hb.glowOut.mesh(shellLit));
   const standIn = shade(hb.f.mesh(solid));
-  scene.add(shade(vb.mesh(solid)), vlit.mesh(lit), shade(hb.h.mesh(solid)), standIn, shade(hb.up.mesh(glass), false), hb.glow.mesh(lit), deck, shell);
+  scene.add(shade(vb.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, shadowSide: THREE.FrontSide }))), // open batch: front faces cast
+     vlit.mesh(lit), blobs, shade(hb.h.mesh(solid)), standIn, shade(hb.up.mesh(glass), false), hb.glow.mesh(lit), deck, shell);
 
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), new THREE.MeshBasicMaterial({ color: C.water, transparent: true, opacity: 0.8, depthWrite: false }));
-  water.rotation.x = -Math.PI / 2; water.position.set(5, 0, 5); scene.add(water);
+  // Flood: the whole village under one opaque, unlit mud plane (light, so lit wood and furniture still read against it; unlit, so the alert dimming cannot muddy it).
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), new THREE.MeshBasicMaterial({ color: C.water }));
+  water.rotation.x = -Math.PI / 2; water.position.set(5, 0, 5); water.visible = false; scene.add(water);
 
   // Rain: one LineSegments. Every streak is drawn twice, one loop height apart, so the loop is seamless.
   const DROPS = 420, LOOP = 18, rp = [];
@@ -50,11 +76,11 @@ export function createView(canvas) {
 
   // Flood water detail. Streaks slide with the current (three copies a loop apart, so the slide never shows a gap).
   // Rings are rain drops and the man's wake: one instanced mesh, each ring grows and fades into the water colour.
-  const FLOW = 26, fb = batch();
-  for (let i = 0; i < 60; i++) { const x = -22 + Math.random() * FLOW, z = -14 + Math.random() * 38, l = 0.7 + Math.random() * 1.6; for (const o of [-FLOW, 0, FLOW]) fb.add(0, x + o, x + o + l, 0, 0.004, z, z + 0.05); }
-  const streaks = fb.mesh(new THREE.MeshBasicMaterial({ color: 0xf6e7c8, transparent: true, opacity: 0.2, depthWrite: false })); streaks.frustumCulled = false; scene.add(streaks);
+  const fb = batch();
+  for (let i = 0; i < 90; i++) { const x = SW.x0 + Math.random() * FLOW, z = SW.z0 + Math.random() * (SW.z1 - SW.z0), l = 0.8 + Math.random() * 1.8; for (const o of [-FLOW, 0, FLOW]) fb.add(0, x + o, x + o + l, 0, 0.004, z, z + 0.07); }
+  const streaks = fb.mesh(new THREE.MeshBasicMaterial({ color: 0xf1e6c8, transparent: true, opacity: 0.4, depthWrite: false })); streaks.frustumCulled = false; scene.add(streaks);
   const RINGS = 30, ringGeo = new THREE.RingGeometry(0.82, 1, 20); ringGeo.rotateX(-Math.PI / 2);
-  const rings = new THREE.InstancedMesh(ringGeo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.55, depthWrite: false }), RINGS); rings.frustumCulled = false; scene.add(rings);
+  const rings = new THREE.InstancedMesh(ringGeo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.6, depthWrite: false }), RINGS); rings.frustumCulled = false; scene.add(rings);
   const ring = Array.from({ length: RINGS }, () => ({ x: 0, z: 0, age: Math.random(), life: 1, size: 0.4 })), dummy = new THREE.Group(), foam = new THREE.Color(0xfff6e0), wet = new THREE.Color(C.water), tint = new THREE.Color();
   let ri = 0, wake = 0, flow = 0, mood = 0, shake = 0, lvl = 0;
   const ripple = (x, z, size) => { const r = ring[ri = (ri + 1) % RINGS]; r.x = x; r.z = z; r.age = 0; r.life = 0.7 + size; r.size = size; };
@@ -63,13 +89,13 @@ export function createView(canvas) {
   const man = new THREE.Group(); scene.add(man);
   let body = shade(batch().all(BODY).mesh(solid)), legs = [], head = null, rest = 0, waveUp = Math.PI, deckY = 0.08, pack = null; // rest: how far the arms must drop to hang down
   let arms = [-1, 1].map(side => { const a = shade(batch().all(ARM()).mesh(solid)); a.position.set(side * 0.31, 0.95, 0); return a; });
-  man.add(body, ...arms);
+  man.add(body, ...arms); rim(man);
   const jacket = new THREE.Mesh(deck.geometry, new THREE.MeshLambertMaterial({ color: C.jacket })); jacket.scale.set(0.58, 0.44, 0.42); jacket.position.y = 0.74; man.add(jacket);
   const boat = new THREE.Group(); scene.add(boat);
   let jiran = shade(batch().all(NEIGHBOUR).mesh(solid)); jiran.position.set(-0.7, 0.08, 0); jiran.rotation.y = Math.PI / 2;
   let wave = shade(batch().all(ARM(C.coat)).mesh(solid)); wave.position.set(-0.7, 1.03, -0.32); // the jiran's waving arm
   let hull = shade(batch().all(BOAT).mesh(solid));
-  boat.add(hull, jiran, wave);
+  boat.add(hull, jiran, wave); rim(boat);
 
   // A baked model as a group: one mesh per moving part, each at its pivot. Returns [group, parts by name, top height].
   function rig(parts) {
@@ -83,15 +109,15 @@ export function createView(canvas) {
     pack = pk;
     standIn.visible = false; scene.add(shade(furnish(pk).mesh(solid)));
     man.remove(body, ...arms);
-    let by, top; [body, by, top] = rig(pk.man); body.add(shade(batch().all(SARONG).mesh(solid))); man.add(body);
-    arms = [by['arm-right'], by['arm-left']]; legs = [by['leg-right'], by['leg-left']]; head = by.head; rest = droop(arms[0]) - 0.15;
+    let by, top; baju(pk.man); [body, by, top] = rig(pk.man); body.add(shade(batch().all(SARONG).mesh(solid))); man.add(body);
+    arms = [by['arm-right'], by['arm-left']]; legs = [by['leg-right'], by['leg-left']]; head = by.head; rest = droop(arms[0]) - 0.15; head.add(shade(batch().all(SONGKOK).mesh(solid))); rim(body);
     const tb = by.torso.geometry.boundingBox; // life jacket hugs the torso
     jacket.scale.set((tb.max.x - tb.min.x) * 1.12, (tb.max.y - tb.min.y) * 0.9, (tb.max.z - tb.min.z) * 1.15); jacket.position.set(by.torso.position.x + (tb.max.x + tb.min.x) / 2, by.torso.position.y + (tb.max.y + tb.min.y) / 2, by.torso.position.z + (tb.max.z + tb.min.z) / 2);
     boat.remove(hull, jiran, wave);
     hull = rig(pk.boat)[0]; hull.position.y = -0.2; deckY = -0.02;
     [jiran, by] = rig(pk.jiran); jiran.position.set(-0.75, deckY - 0.1, 0); jiran.rotation.y = Math.PI / 2; jiran.scale.setScalar(0.92);
     wave = by['arm-right']; waveUp = -(2.5 - droop(wave));
-    boat.add(hull, jiran);
+    boat.add(hull, jiran); rim(boat);
     if (sim) for (const i of sim.items) dress(meshes.get(i.id), i);
   }
   const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.62, 4), new THREE.MeshBasicMaterial({ color: C.arrow, depthTest: false, transparent: true })); arrow.rotation.x = Math.PI; arrow.renderOrder = 9; scene.add(arrow); // hint pointer, always on top
@@ -116,7 +142,7 @@ export function createView(canvas) {
     u.own = !parts; u.rig = null;
     if (parts) { [u.body, u.rig, u.h] = rig(parts); if (i.id === 'kucing') u.body.rotation.y = Math.PI / 2; } // the cat model looks along z, the game turns it nose first along x
     else { u.body = shade(batch().all(shape).mesh(solid)); u.h = Math.max(...shape.map(b => b[4])); }
-    g.add(u.body); u.sp.position.y = u.h + 0.42;
+    g.add(u.body); u.sp.position.y = u.h + 0.42; u.rims = rim(u.body);
   }
   function setSim(s) {
     for (const m of meshes.values()) { scene.remove(m); if (m.userData.own) m.userData.body.geometry.dispose(); }
@@ -163,13 +189,13 @@ export function createView(canvas) {
     if (sim) {
       const p = sim.p, b = sim.boat, pulse = 0.5 + 0.5 * Math.sin(time * 7), moved0 = Math.hypot(p.x - lastX, p.z - lastZ) > 1e-4;
       rain.material.opacity = 0.28 + 0.08 * sim.level; // heavier as the alert rises
-      mood += (sim.level / 3 - mood) * Math.min(1, dt * 0.8); hemi.intensity = 1.9 - 0.45 * mood; sun.intensity = 2.1 - 0.6 * mood; // the day darkens with the alert; lit windows stand out
-      water.position.y = sim.water;
+      mood += (sim.level / 3 - mood) * Math.min(1, dt * 0.8); hemi.intensity = 1.9 - 0.12 * mood; sun.intensity = 2.1 - 0.15 * mood; // a slight dusk only: ground, road and sky stay near their Normal colours
+      water.visible = sim.water > 0.02; water.position.y = sim.water;
       flow = (flow + dt * (0.5 + 0.5 * sim.level)) % FLOW; streaks.position.set(flow, sim.water + 0.012, 0);
       wake -= dt;
       if (wake < 0) { // a rain drop somewhere, or the man's wake when he wades
         const wading = sim.water > p.y + 0.05 && !p.aboard;
-        if (wading && moved0) { ripple(p.x, p.z, 0.55); wake = 0.22; } else { ripple(-3 + Math.random() * 16, -3 + Math.random() * 12, 0.2 + Math.random() * 0.25); wake = 0.16 - 0.035 * sim.level; }
+        if (wading && moved0) { ripple(p.x, p.z, 0.55); wake = 0.22; } else { ripple(-4 + Math.random() * 18, -6 + Math.random() * 12, 0.2 + Math.random() * 0.25); wake = 0.16 - 0.035 * sim.level; }
       }
       ring.forEach((r, k) => {
         r.age += dt / r.life; const a = Math.min(1, r.age);
@@ -231,6 +257,7 @@ export function createView(canvas) {
           for (const n in u.rig) if (n.startsWith('leg')) u.rig[n].rotation.x = n.includes('front') ? run : -run;
           u.rig.tail.rotation.z = Math.sin(time * 5) * 0.25;
         }
+        for (const e of u.rims) e.visible = i.loc === 'hand'; // rim only while carried
         g.visible = !(i.loc === 'gone' && u.gone >= 1);
       }
     }
@@ -265,7 +292,8 @@ export function createView(canvas) {
   }
   // Fetches the baked models and swaps them in. Resolves false if they cannot load: the box models stay.
   const models = url => loadPack(url).then(pk => { upgrade(pk); return true; }, () => false);
+  const dv = new THREE.Vector3(), driverAt = () => { boat.localToWorld(dv.set(-0.75, deckY + 1.95, 0)); return toScreen(dv.x, dv.y, dv.z); }; // above the boat driver's head: the jacket bubble
   const hintAt = () => arrow.visible ? toScreen(arrow.position.x, arrow.position.y - 0.8, arrow.position.z) : null; // where the first-run hand should tap
   const look = (x, y, z, w) => { HOUSE.set(x, y, z); width = w; frustum(); }; // art checks only: close-up on a spot
-  return { setSim, begin, frame, pick, resize, quality, toScreen, models, look, hintAt, boatAt: () => toScreen(boat.position.x, boat.position.y, boat.position.z), info: () => renderer.info.render };
+  return { setSim, begin, frame, pick, resize, quality, toScreen, models, look, hintAt, driverAt, boatAt: () => toScreen(boat.position.x, boat.position.y, boat.position.z), info: () => renderer.info.render };
 }

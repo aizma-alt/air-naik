@@ -86,7 +86,9 @@ async function smoke() {
 
   for (const [t, name] of [[40, '6-amaran-40s'], [53, '7-ground-deep-53s'], [64, '8-bahaya-64s'], [75, '9-boat-75s']]) { await ff(t); await page.waitForTimeout(300); await shot(name); }
   assert.equal(await sim(() => window.__game.sim.boat.state), 'docked');
-  await ff(79.2); await page.waitForTimeout(300); await shot('10-jacket-79s');
+  await page.waitForTimeout(300); await shot('9b-jacket-bubble');
+  await page.locator('#jaket').tap({ force: true }); assert.equal(await sim(() => window.__game.sim.p.intent?.k), 'board', 'jacket bubble did not start boarding');
+  await page.evaluate(() => { const g = window.__game; const u = g.sim.t + 1.5; while (g.sim.t < u && !g.sim.done) g.step(g.sim, 1 / 30); }); await page.waitForTimeout(300); await shot('10-jacket');
   await page.waitForFunction(() => !document.getElementById('end').hidden, null, { timeout: 15000 });
   await shot('11-end');
   await page.waitForFunction(() => document.getElementById('card').naturalWidth === 1080, null, { timeout: 10000 });
@@ -129,7 +131,7 @@ async function smoke() {
   assert.ok(bx[4] < bx[5] && bx[5] < bx[6], 'boat does not come in from screen left: ' + bx.slice(4));
   assert.equal(await G(() => window.__game.sim.p.lvl), 2, 'not on the roof at 75s');
   await touch(7.6, 6.35, 2.6);
-  assert.equal(await G(() => window.__game.sim.p.intent?.k), 'boat', 'tap on the docked boat was not picked');
+  assert.equal(await G(() => window.__game.sim.p.intent?.k), 'board', 'tap on the docked boat was not picked');
   await ff(80.5); await page.waitForTimeout(900);
   assert.ok(await G(() => window.__game.view.boatAt().x) > bx[6] + 10, 'boat does not leave to screen right');
   await shot('b10-boat-leaving');
@@ -191,8 +193,8 @@ async function review(round) {
   await page.goto(LOCAL + '?debug&seed=7'); await page.waitForFunction(() => window.__ready);
   await page.waitForTimeout(2500); await shot('01-landing');
   await page.locator('#mula').tap({ force: true }); await page.waitForTimeout(750); await shot('02-cutaway'); await page.waitForTimeout(1200); await shot('03-start');
-  await page.evaluate(async () => { const b = await import('/test/bots.mjs'); setInterval(() => { const s = window.__game.sim; if (!s.done && (s.ping ? s.t > s.ping.until - 2.5 : b.free(s))) b.casual(s); }, 500); });
-  for (const t of [3, 9, 16, 24, 33, 41, 48, 53.5, 58, 63, 66, 71, 75, 79.4, 81]) {
+  await page.evaluate(async () => { const b = await import('/test/bots.mjs'); setInterval(() => { const s = window.__game.sim; if (s.boat.state === 'docked' && !s.p.locked && s.t > 76) window.__game.tap(s, 'boat'); if (!s.done && (s.ping ? s.t > s.ping.until - 2.5 : b.free(s))) b.casual(s); }, 500); });
+  for (const t of [3, 9, 16, 24, 33, 41, 48, 53.5, 58, 63, 66, 71, 75, 77, 78.5]) {
     await page.waitForFunction(t => window.__game.sim.t >= t, t, { timeout: 30000 }); await shot(`t${String(t).padStart(4, '0')}`);
   }
   await page.waitForFunction(() => window.__game.sim.done); await page.waitForTimeout(700); await shot('99-end');

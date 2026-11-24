@@ -52,7 +52,7 @@ export function createSim(seed, calm = false) {
   cat.flee = calm ? 0 : 1 + (rnd() < TUNE.flee2 ? 1 : 0);
   return {
     seed, calm, rnd, cat, pings, ping: null, early: 0, t: 0, started: false, done: false, water: WATER[0][1], level: 0, final: null,
-    items, boat: { state: 'away', k: 0 }, msg: '', msgN: 0, held: false, banked: false,
+    items, boat: { state: 'away', k: 0 }, boardAt: null, endAt: null, msg: '', msgN: 0, held: false, banked: false,
     p: { x: h.x, z: h.z, y: ROOMS.tamu.y, room: 'tamu', lvl: 0, node: 'home', path: [], link: null, hands: [],
       busy: 0, stun: 0, intent: null, lifted: false, floating: false, locked: false, jacket: false, aboard: false },
   };
@@ -118,7 +118,7 @@ function go(s, target) {
   }
 }
 
-// kind: 'item' (id), 'slot' (node id), 'para', 'boat'. Returns true if the tap was accepted.
+// kind: 'item' (id), 'slot' (node id), 'para', 'boat' (board: only once it has docked). Returns true if the tap was accepted.
 export function tap(s, kind, id) {
   const p = s.p;
   if (s.done) return false;
@@ -128,6 +128,11 @@ export function tap(s, kind, id) {
     s.ping = null;
     if (g.kind === 'hoax') { if (id === 'sebar') { p.stun = TUNE.sebar; say(s, BM.sebar); } else say(s, BM.semak); }
     return true;
+  }
+  if (kind === 'boat') { // board: closes any message, he walks to the dock and puts on the jacket there
+    if (s.boat.state !== 'docked' || p.locked || p.lifted) return false;
+    s.ping = null; p.locked = true; p.intent = { k: 'board' }; p.busy = 0; p.stun = 0; s.started = true;
+    go(s, 'dock'); return true;
   }
   if (s.ping || p.locked || p.lifted || p.aboard) return false; // an open message blocks the house
   let target, intent;
@@ -143,7 +148,6 @@ export function tap(s, kind, id) {
     if (sealed(s, room(id).lvl)) return say(s, BM.deep), false;
     target = id; intent = { k: 'slot', node: id };
   } else if (kind === 'para') { target = 'pa'; intent = { k: 'para' }; }
-  else if (kind === 'boat' && s.boat.state === 'docked') { target = 'dock'; intent = { k: 'boat' }; }
   else return false;
   s.started = true; // the clock starts on the first tap
   p.intent = intent; p.busy = 0;
@@ -183,7 +187,11 @@ function act(s) {
     if (!p.hands.length || used(s, it.node)) return;
     const i = p.hands.pop();
     i.node = it.node; i.loc = s.t >= T.drift ? lose(i) : 'slot';
-  } else if (it.k === 'para' || (it.k === 'boat' && s.boat.state === 'docked')) {
+  } else if (it.k === 'board') { // at the dock: what he carries goes on the boat, jacket on, boards after T.wear
+    for (const i of p.hands) i.loc = 'boat';
+    if (p.hands.length) s.banked = true;
+    p.hands = []; p.jacket = true; s.boardAt = s.t + T.wear; // no toast: the bubble already said it
+  } else if (it.k === 'para') {
     for (const i of p.hands) i.loc = it.k;
     if (p.hands.length) s.banked = true;
     p.hands = [];
@@ -284,10 +292,8 @@ export function step(s, dt) {
   chaos(s, dt);
   if (t >= T.boat - T.boatIn && t < T.boat) { s.boat.state = 'arriving'; s.boat.k = (t - T.boat + T.boatIn) / T.boatIn; }
   if (at(T.boat)) { s.boat.state = 'docked'; say(s, BM.boat); }
-  if (at(T.move)) { p.locked = true; p.intent = null; p.busy = 0; p.stun = 0; s.ping = null; go(s, 'dock'); say(s, BM.move); }
-  if (at(T.jacket)) { p.jacket = true; say(s, BM.jacket); }
-  if (at(T.board)) { p.aboard = true; if (s.cat.loc === 'perch' || s.cat.loc === 'run') s.cat.loc = 'ikut'; s.final = score(s); s.boat.state = 'leaving'; say(s, BM.pps); }
-  if (t >= T.board) s.boat.k = Math.min(1, (t - T.board) / (T.end - T.board));
-  if (at(T.end)) s.done = true;
+  if (s.boardAt !== null && !p.aboard && t >= s.boardAt) { p.aboard = true; s.endAt = t + T.sail; if (s.cat.loc === 'perch' || s.cat.loc === 'run') s.cat.loc = 'ikut'; s.final = score(s); s.boat.state = 'leaving'; say(s, BM.pps); }
+  if (p.aboard) s.boat.k = Math.min(1, 1 - (s.endAt - t) / T.sail);
+  if (s.endAt !== null && t >= s.endAt) s.done = true;
   if (!p.aboard) move(s, dt);
 }

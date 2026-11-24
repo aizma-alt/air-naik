@@ -46,8 +46,9 @@ export const LINKS = [['sb', 'st'], ['hb', 'ht']]; // the only edges that change
 export const BOAT = { x: 7.6, z: 2.6, from: 11, accel: 0.8 }; // from: tiles of approach; accel: tiles/s2 when leaving
 
 // Timeline (seconds after the first tap). levels: start of Normal, Waspada, Amaran, Bahaya.
-// boatIn: seconds the boat is seen approaching before it docks at T.boat.
-export const T = { levels: [0, 10, 30, 55], drift: 62, max: 70, boatIn: 6, boat: 74, move: 78, jacket: 79, board: 80, end: 82 };
+// boatIn: seconds the boat is seen approaching before it docks at T.boat. Then the player taps the boat (or the jacket bubble): he walks to the dock,
+// puts on the jacket, boards wear seconds later, and the run ends sail seconds after that. No tap, no boarding: the water stops at the Para.
+export const T = { levels: [0, 10, 30, 55], drift: 62, max: 70, boatIn: 6, boat: 74, wear: 0.9, sail: 2 };
 // Water height keyframes [t, y]. Floors reached: Serambi 22s, Dapur 34s, Ruang Tamu 44s, Bilik 58s.
 export const WATER = [[0, -0.25], [10, 0], [22, 1.0], [34, 1.3], [44, 1.6], [50, 2.6], [58, 4.0], [70, 6.05]];
 
@@ -83,7 +84,7 @@ export const BM = {
   hint1: 'Klik barang', hint2: 'Klik tempat tinggi',
   heavy: 'Terlalu berat!', full: 'Tangan penuh!', deep: 'Air dah tinggi sangat!',
   lift: 'Air dah tinggi, naik atas!', boat: 'Bot sampai!', move: 'Masa pindah!',
-  jacket: 'Pakai jaket', pps: 'Menuju PPS', fail: 'Game tak boleh load. Cuba refresh.',
+  pps: 'Menuju PPS', fail: 'Game tak boleh load. Cuba refresh.',
   cat: 'Comot lari!', catRun: 'Comot tengah lari!', catUp: 'Comot panjat bumbung!',
   // Result card. tip is the one sourced safety line (source in docs/item-sheet.md, never named in the game).
   titles: { awal: 'Beg Siap Awal', dokumen: 'Dokumen Penting', comot: 'Sayang Comot', peti: 'Hero Peti Sejuk', tabah: 'Tabah Sampai Akhir' },

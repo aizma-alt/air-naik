@@ -6,7 +6,7 @@ import { createSim, spawn, step, tap, score, pathFrom, title } from '../sim.js';
 
 const SEEDS = 200, DT = 1 / 30, SAFE = ['hand', 'para', 'boat'];
 const roomOf = i => NODES[i.node].rooms[0];
-const run = (s, until, each) => { while (!s.done && s.t < until) { each && each(s); step(s, DT); } return s; };
+const run = (s, until, each, board = true) => { while (!s.done && s.t < until) { each && each(s); if (board && s.boat.state === 'docked' && !s.p.locked) tap(s, 'boat'); step(s, DT); } return s; }; // board: tap the boat once it docks
 const slots = Object.keys(NODES).filter(k => NODES[k].slot);
 
 // Returns a list of broken spawn rules (empty = good).
@@ -56,8 +56,12 @@ for (let seed = 1; seed <= SEEDS; seed++) {
   const before = Object.fromEntries(s.items.map(i => [i.id, i.node]));
   run(s, T.drift - 0.1, s => invariants(s, 'idle ' + seed));
   drifts += s.items.filter(i => i.id !== 'kucing' && i.node !== before[i.id]).length;
+  if (seed <= 20) { // no tap on the boat: it waits at the dock, he stays on the Para, the run never ends
+    run(s, 120, null, false);
+    assert.ok(!s.done && !s.p.aboard && s.boat.state === 'docked' && s.p.lvl === 2, 'boarded or ended without a tap on the boat');
+  }
   run(s, 999, s => invariants(s, 'idle ' + seed));
-  assert.ok(s.t >= 78 && s.t <= 82.1, 'run length ' + s.t);
+  assert.ok(s.t >= T.boat && s.t <= (seed <= 20 ? 125 : T.boat + 8), 'run length ' + s.t);
   assert.equal(score(s), 0, 'idle run scored');
   assert.ok(s.items.every(i => i.loc === (i.id === 'kucing' ? 'ikut' : 'gone')), 'idle run: items not swept, or cat not riding along');
 

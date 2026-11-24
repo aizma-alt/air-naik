@@ -19,6 +19,7 @@ export function play(seed, bot, react = 0, calm = false) {
       if (!s.started || s.t - mem.since >= react) { bot(s, mem); mem.since = null; }
     } else mem.since = null;
     if (!s.started) break; // a bot that never taps: the clock never starts
+    if (s.boat.state === 'docked' && !s.p.locked) tap(s, 'boat'); // every bot boards as soon as it can
     step(s, DT);
   }
   const all = s.items.reduce((a, i) => a + i.d.nilai, 0);
