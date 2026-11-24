@@ -142,9 +142,9 @@ assert.equal(JSON.stringify(createSim(9, true).items.map(i => i.node)), JSON.str
   const seed = [...Array(50).keys()].find(n => createSim(n, true).items.some(i => i.id === 'ubat' || i.id === 'wang'));
   const s = createSim(seed, true), put = (f, loc) => s.items.filter(f).forEach(i => i.loc = loc);
   assert.equal(title(s), 'tabah');
-  put(i => i.d.decoy, 'para'); assert.equal(title(s), 'peti');
   put(i => i.id === 'kucing', 'hand'); assert.equal(title(s), 'comot');
-  put(i => i.id === 'dokumen', 'boat'); assert.equal(title(s), 'comot', 'Jaguh Dokumen without Ubat and Wang');
+  put(i => i.d.decoy, 'para'); assert.equal(title(s), 'peti', 'a saved decoy outranks the cat');
+  put(i => i.id === 'dokumen', 'boat'); assert.equal(title(s), 'peti', 'Dokumen without Ubat and Wang');
   put(i => i.id === 'ubat' || i.id === 'wang', 'para'); assert.equal(title(s), 'dokumen');
   s.early = score(s) / 2; assert.equal(title(s), 'dokumen', 'Beg Siap Awal at exactly half');
   s.early = score(s); assert.equal(title(s), 'awal');
