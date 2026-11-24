@@ -1,12 +1,13 @@
 # Air Naik!
 
-![Air Naik!](og.png)
+![Air Naik! Hujan tak berhenti. Selamatkan apa yang boleh.](og.png)
 
-**The water is coming up. You have about 80 seconds and two hands.**
+**Hujan tak berhenti. Air naik. Awak ada 70 saat dan dua tangan.**
+*Rain won't quit and the water's rising. You get about 70 seconds and two hands.*
 
-Air Naik! is a short arcade game for mobile browsers about a flood in a Malaysian kampung. Grab the family's stuff and get it up high before the rescue boat comes. You can't save everything, so every trip up the stairs is a choice: the documents or the medicine, the TV or the cat.
+A tiny arcade game for your phone browser. A kampung house is flooding, and you're the one running up and down the stairs saving the family's stuff. You can't carry everything. Documents or medicine? The TV or the cat? Pick fast, the water doesn't wait.
 
-▶ **[Play in your browser](https://aizma-alt.github.io/air-naik/)**. No install, no account. Made for phones in portrait, and it works on desktop too.
+▶ **[Main sekarang / Play now](https://aizma-alt.github.io/air-naik/)**. No install, no account, no ads. Best on a phone in portrait, fine on desktop too.
 
 *Projek kreatif, bukan produk rasmi.*
 
@@ -14,13 +15,13 @@ Air Naik! is a short arcade game for mobile browsers about a flood in a Malaysia
 
 ## How it plays
 
-- **Tap an item** to walk over and grab it. **Tap a high spot** to drop it there.
-- **Two hands, real weight.** Light things are quick. Heavy things slow you down. The fridge takes both hands and it's probably not worth it.
-- **The water is the timer.** There's no countdown, just the flood climbing from Normal to Waspada, Amaran and Bahaya, one room at a time.
-- **Chaos.** The cat bolts. Items float off. Your phone keeps buzzing with messages, and some of them are hoaxes.
-- **Get out.** When the boat docks at the roof, whatever is in your hands, on the roof deck or in the boat counts. The rest goes with the water.
+- **Tap an item** to walk over and grab it. **Tap a high spot** to put it down there.
+- **Two hands, real weight.** Light stuff is quick. Heavy stuff slows you down. The fridge takes both hands, and it's probably not worth it.
+- **The water is your timer.** No countdown. The flood just climbs through Normal, Waspada, Amaran and Bahaya, one room at a time.
+- **Chaos.** The cat bolts. Things float off. Your phone keeps buzzing with messages, and some of them are hoaxes.
+- **Get out.** When the rescue boat docks at the roof, whatever you're holding, on the roof deck or in the boat counts. The rest goes with the water.
 
-At the end you get a title for how you played (Beg Siap Awal, Sayang Comot, Hero Peti Sejuk...) and a result card you can share.
+At the end you get a title for how you played (Beg Siap Awal, Sayang Comot, Hero Peti Sejuk...) and a result card to share with your friends.
 
 No deaths, no ads, no in-app purchases.
 
