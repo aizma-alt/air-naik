@@ -169,7 +169,7 @@ async function smoke() {
   await flaky.locator('#mula').tap({ force: true }); await flaky.waitForTimeout(1700);
   await flaky.waitForFunction(() => window.__sounds !== undefined);
   assert.equal(await flaky.evaluate(() => window.__sounds), 18, 'a broken sound file was counted, or it took the good ones down');
-  await flaky.evaluate(() => { const g = window.__game; g.tap(g.sim, 'item', 'dokumen'); while (g.sim.t < 81.5) g.step(g.sim, 1 / 30); });
+  await flaky.evaluate(() => { const g = window.__game; g.tap(g.sim, 'item', 'dokumen'); while (g.sim.t < 81.5 && !g.sim.done) g.step(g.sim, 1 / 30); });
   await flaky.waitForFunction(() => !document.getElementById('end').hidden, null, { timeout: 15000 });
   assert.equal(await flaky.locator('#endT').textContent(), 'Skor 10', 'no plain score when the card cannot load');
   assert.equal(await flaky.locator('#card').isHidden() && await flaky.locator('#kongsi').isHidden(), true);
